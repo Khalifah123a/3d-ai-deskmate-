@@ -1,0 +1,63 @@
+# Unity generated folders
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.skp
+*.meta # ignore all meta by default, then add exceptions
+# Exceptions for source files that need meta
+!Assets/**/*.meta
+!Packages/**/*.meta
+!ProjectSettings/**/*.meta
+# Unity Package Manager cache
+Packages/node_modules/
+# External libraries
+Plugins/
+Assets/Assets/
+Assets/ExternalDlls/
+Assets/StreamingAssets/
+# Generated documentation
+DocumentationReferences/
+# Build caches
+Assembly-CSharp*
+Assembly-CSharp-Editor*
+# Unity Editor preferences
+ProjectSettings/EditorUserSettings.asset
+UserSettings/
+# OS files
+.DS_Store
+Thumbs.db
+# Logs
+Logs/
+# AI scratchpads (local only)
+omo/
+.chat.md
+.continue.md
+.chat
+# .env files contain secrets
+**/.env
+!backend/.env.example
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+backend/audio_temp/
+# IDEs
+.vscode/
