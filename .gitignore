@@ -49,6 +49,8 @@ omo/
 .chat.md
 .continue.md
 .chat
+continue.md
+chat.md
 # .env files contain secrets
 **/.env
 !backend/.env.example
