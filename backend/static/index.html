@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D AI DeskMate - Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>🤖 3D AI DeskMate</h1>
+            <div class="status-badge" id="statusBadge">Connecting...</div>
+        </header>
+
+        <div class="grid">
+            <!-- Server Status -->
+            <div class="card">
+                <h2>📊 Server Status</h2>
+                <div class="stats" id="serverStats">
+                    <div class="stat">
+                        <span class="label">Uptime</span>
+                        <span class="value" id="uptime">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">CPU</span>
+                        <span class="value" id="cpu">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Memory</span>
+                        <span class="value" id="memory">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Disk</span>
+                        <span class="value" id="disk">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connected Clients -->
+            <div class="card">
+                <h2>🔗 Connections</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="label">WebSocket Clients</span>
+                        <span class="value" id="wsClients">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">LLM Provider</span>
+                        <span class="value" id="llmProvider">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Memory DB</span>
+                        <span class="value" id="memoryDb">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Platform</span>
+                        <span class="value" id="platform">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat History -->
+            <div class="card wide">
+                <h2>💬 Recent Chat</h2>
+                <div class="chat-log" id="chatLog">
+                    <div class="empty">No messages yet. Waiting for Unity client...</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="card">
+                <h2>⚙️ Controls</h2>
+                <div class="controls">
+                    <button onclick="restartServer()" class="btn btn-danger">🔄 Restart Server</button>
+                    <button onclick="clearHistory()" class="btn btn-warning">🗑️ Clear History</button>
+                    <button onclick="location.reload()" class="btn btn-primary">🔃 Refresh Dashboard</button>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card wide">
+                <h2>📋 Activity Log</h2>
+                <div class="activity-log" id="activityLog">
+                    <div class="log-entry">Dashboard loaded</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>3D AI DeskMate Dashboard v2.0 | Backend: FastAPI + Groq</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

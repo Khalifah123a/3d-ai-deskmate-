@@ -5,9 +5,11 @@ import asyncio
 import os
 import json
 import logging
+import time
 import traceback
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 from config import settings
 from llm.groq_provider import GroqProvider
@@ -15,6 +17,7 @@ from llm.ollama_provider import OllamaProvider
 from tts.edge_tts_provider import generate_tts
 from memory.chromadb_store import MemoryStore
 from function_calling import execute_tool, get_tools_json
+from dashboard import get_server_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("server")
@@ -35,9 +38,9 @@ os.makedirs("audio_temp", exist_ok=True)
 
 TOOLS_JSON = get_tools_json()
 
-PROMPT_WITH_TOOLS = """You are a friendly, helpful, and expressive 3D AI Assistant. Keep your answers natural, concise, and suitable for spoken dialogue.
+PROMPT_WITH_TOOLS = """You are a friendly, helpful, and expressive 3D AI Assistant named Khaleefa. Keep your answers natural, concise, and suitable for spoken dialogue. Reply in the same language the user uses.
 
-You have access to tools. If the user asks about weather or wants you to run a command, call the appropriate tool.
+You have access to tools. If the user asks to open something, check weather, or wants you to run a command, call the appropriate tool.
 
 To call a tool, respond with ONLY a JSON object: {"function": "name", "parameters": {...}}
 If no tool is needed, respond with normal text.
@@ -49,9 +52,21 @@ Available tools:
 
 VALID_EMOTIONS = {"happy", "sad", "angry", "surprised", "neutral"}
 
+# --- Analytics tracking ---
+analytics = {
+    "total_messages": 0,
+    "total_tool_calls": 0,
+    "chat_history": [],
+    "ws_clients": 0,
+    "last_emotion": "neutral",
+}
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 def strip_think_blocks(text: str) -> str:
-    """Remove ... blocks from LLM responses."""
+    """Remove <think>...</think> blocks from LLM responses."""
     import re
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
     return cleaned.strip()
@@ -84,19 +99,84 @@ def try_parse_function_call(text: str) -> dict:
     return {"content": text, "function": None}
 
 
+# =========== DASHBOARD ENDPOINTS ===========
+
+
+@app.get("/")
+async def root():
+    return FileResponse("static/index.html")
+
+
 @app.get("/health")
 async def health_check():
     return {
         "status": "ok",
         "llm_provider": settings.LLM_PROVIDER,
-        "memory": "enabled" if settings.MEMORY_ENABLED else "disabled"
+        "memory": "enabled" if settings.MEMORY_ENABLED else "disabled",
     }
+
+
+@app.get("/api/status")
+async def api_status():
+    status = get_server_status()
+    status["llm_provider"] = settings.LLM_PROVIDER
+    status["memory_status"] = "enabled" if settings.MEMORY_ENABLED else "disabled"
+    status["ws_clients"] = analytics["ws_clients"]
+    status["total_messages"] = analytics["total_messages"]
+    status["total_tool_calls"] = analytics["total_tool_calls"]
+    status["last_emotion"] = analytics["last_emotion"]
+    return status
+
+
+@app.get("/api/chat/history")
+async def api_chat_history():
+    return {"messages": analytics["chat_history"][-50:]}
+
+
+@app.post("/api/control/restart")
+async def api_restart():
+    logger.info("[Dashboard] Restart requested")
+    return {"status": "restart_signal_sent"}
+
+
+@app.post("/api/control/clear")
+async def api_clear():
+    analytics["chat_history"] = []
+    analytics["total_messages"] = 0
+    analytics["total_tool_calls"] = 0
+    logger.info("[Dashboard] Chat history cleared")
+    return {"status": "cleared"}
+
+
+@app.get("/api/analytics")
+async def api_analytics():
+    return {
+        "total_messages": analytics["total_messages"],
+        "total_tool_calls": analytics["total_tool_calls"],
+        "recent_emotions": analytics.get("recent_emotions", []),
+        "messages_per_hour": _calc_messages_per_hour(),
+    }
+
+
+def _calc_messages_per_hour():
+    """Count messages in the last hour."""
+    now = time.time()
+    hour_ago = now - 3600
+    count = 0
+    for msg in analytics["chat_history"]:
+        if msg.get("timestamp", 0) > hour_ago:
+            count += 1
+    return count
+
+
+# =========== WEBSOCKET ===========
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    logger.info("[WS] Client connected")
+    analytics["ws_clients"] += 1
+    logger.info(f"[WS] Client connected ({analytics['ws_clients']} total)")
 
     conversation_history = []
 
@@ -112,9 +192,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_text(json.dumps({
                     "text": "No message received.",
                     "audio_url": None,
-                    "expression": "neutral"
+                    "expression": "neutral",
                 }))
                 continue
+
+            analytics["total_messages"] += 1
+            analytics["chat_history"].append({
+                "role": "user",
+                "text": user_message,
+                "time": time.strftime("%H:%M"),
+                "timestamp": time.time(),
+            })
 
             conversation_history.append({"role": "user", "content": user_message})
 
@@ -137,13 +225,16 @@ async def websocket_endpoint(websocket: WebSocket):
             if func_call.get("function"):
                 func_name = func_call["function"]
                 params = func_call.get("parameters", {})
+                analytics["total_tool_calls"] += 1
                 try:
                     tool_result = execute_tool(func_name, params)
                 except Exception as e:
                     tool_result = f"Tool error: {e}"
 
                 conversation_history.append({"role": "assistant", "content": ai_reply})
-                conversation_history.append({"role": "system", "content": f"Tool result: {tool_result}"})
+                conversation_history.append(
+                    {"role": "system", "content": f"Tool result: {tool_result}"}
+                )
 
                 messages = [{"role": "system", "content": PROMPT_WITH_TOOLS}]
                 messages.extend(conversation_history[-10:])
@@ -158,6 +249,7 @@ async def websocket_endpoint(websocket: WebSocket):
             clean_reply, emotion = extract_emotion_tag(ai_reply)
             if emotion is None:
                 clean_reply, emotion = ai_reply, "neutral"
+            analytics["last_emotion"] = emotion
             logger.info(f"[WS] Emotion: {emotion}")
 
             audio_url = None
@@ -169,18 +261,27 @@ async def websocket_endpoint(websocket: WebSocket):
             except Exception as e:
                 logger.error(f"[WS] TTS error: {traceback.format_exc()}")
 
+            analytics["chat_history"].append({
+                "role": "ai",
+                "text": clean_reply,
+                "time": time.strftime("%H:%M"),
+                "timestamp": time.time(),
+            })
+
             payload = {
                 "text": clean_reply,
                 "audio_url": audio_url,
-                "expression": emotion
+                "expression": emotion,
             }
 
             await websocket.send_text(json.dumps(payload))
             logger.info("[WS] Response sent!")
 
     except WebSocketDisconnect:
-        logger.info("[WS] Client disconnected")
+        analytics["ws_clients"] = max(0, analytics["ws_clients"] - 1)
+        logger.info(f"[WS] Client disconnected ({analytics['ws_clients']} total)")
     except Exception as e:
+        analytics["ws_clients"] = max(0, analytics["ws_clients"] - 1)
         logger.error(f"[WS] Error: {traceback.format_exc()}")
         try:
             await websocket.close()
@@ -201,4 +302,5 @@ if __name__ == "__main__":
     logger.info(f"LLM Provider: {settings.LLM_PROVIDER}")
     logger.info(f"Model: {settings.GROQ_MODEL}")
     logger.info(f"Memory: {'enabled' if settings.MEMORY_ENABLED else 'disabled'}")
+    logger.info(f"Dashboard: http://localhost:{settings.SERVER_PORT}/")
     uvicorn.run(app, host=settings.SERVER_HOST, port=settings.SERVER_PORT)
