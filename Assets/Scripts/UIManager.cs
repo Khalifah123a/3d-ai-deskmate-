@@ -11,12 +11,16 @@ public class UIManager : MonoBehaviour
 
     private WebSocketClient _webSocket;
     private AudioManager _audioManager;
+    private VRMIdleAnimator _idleAnimator;
     private bool _isProcessing = false;
+    private string _typingDots = "";
+    private float _typingTimer;
 
     void Start()
     {
         _webSocket = FindAnyObjectByType<WebSocketClient>();
         _audioManager = FindAnyObjectByType<AudioManager>();
+        _idleAnimator = FindAnyObjectByType<VRMIdleAnimator>();
 
         if (legacySendButton != null)
             legacySendButton.onClick.AddListener(SendChatMessage);
@@ -30,6 +34,19 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
+        // Typing indicator animation
+        if (_isProcessing)
+        {
+            _typingTimer += Time.deltaTime;
+            if (_typingTimer >= 0.5f)
+            {
+                _typingTimer = 0f;
+                _typingDots = (_typingDots.Length >= 3) ? "" : _typingDots + ".";
+                UpdateStatus("Thinking" + _typingDots);
+            }
+        }
+
+        // Send on Enter
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
         {
             if (!_isProcessing && legacyInputField != null && !string.IsNullOrEmpty(legacyInputField.text.Trim()))
@@ -49,8 +66,12 @@ public class UIManager : MonoBehaviour
         legacyInputField.text = "";
         legacyInputField.Select();
         legacyInputField.ActivateInputField();
-        UpdateStatus("Thinking...");
+        UpdateStatus("Thinking" + _typingDots);
         _isProcessing = true;
+        
+        // Signal thinking to avatar
+        if (_idleAnimator != null)
+            _idleAnimator.SetThinking(true);
     }
 
     public void DisplayUserMessage(string text)
@@ -77,6 +98,11 @@ public class UIManager : MonoBehaviour
 
         UpdateStatus("Ready");
         _isProcessing = false;
+        _typingDots = "";
+        
+        // Stop thinking animation
+        if (_idleAnimator != null)
+            _idleAnimator.SetThinking(false);
     }
 
     public void UpdateConnectionStatus(bool connected)

@@ -1,13 +1,22 @@
 # 3D AI DeskMate - Next Steps & Roadmap
 
-## Recent Fixes (Latest)
-- ✅ VRMLookAtHead now properly enabled with camera target
-- ✅ SpringBone physics enabled with reduced stiffness
-- ✅ Idle animation amplitude increased (more visible movement)
-- ✅ UI font size increased (18→28) for better readability
-- ✅ Camera positioned closer for better portrait view
-- ✅ Added second fill light for better illumination
+## Completed Features
+
+### v1.0 - Initial Release
+- ✅ VRMLookAtHead enabled with Camera.main target + VRMLookAt children search
+- ✅ SpringBone physics enabled with reduced stiffness (0.5f)
+- ✅ Idle animation: breathing, weight shift, arm sway, micro-expressions, blink
+- ✅ Nodding when AI is thinking (random interval 0.8-2s)
+- ✅ Hand gestures when speaking (right arm wave)
+- ✅ Typing indicator: animated dots ("Thinking..." → "Thinking." → "Thinking..")
+- ✅ Thinking state sync: avatar nods while backend processes
+- ✅ Audio object pooling (5 clips, reduces GC allocations)
+- ✅ UI font size increased (18→28)
+- ✅ Camera positioned closer (-3 vs -2.5)
+- ✅ Added fill light for better illumination
 - ✅ Lip sync intensity reduced to prevent oversized mouth
+- ✅ Chat history: user (white) vs AI (blue) with bold labels
+- ✅ Connection status indicator (✓ Connected / ✗ Disconnected)
 
 ## How to Apply Fixes in Unity
 
@@ -19,26 +28,6 @@
 4. **Play** (F5)
 
 ## Next Features to Implement
-
-### High Priority (High Impact)
-1. **Eye Tracking Enhancement**
-   - Make VRMLookAtHead follow mouse cursor more responsively
-   - Add eye blink on click/interaction
-
-2. **Better Idle Animation**
-   - Add nodding when AI is thinking
-   - Add hand gestures when speaking
-   - Add breathing cycle (chest expansion)
-
-3. **UI Polish**
-   - Add typing indicator (animated dots)
-   - Add emotion-based avatar reactions
-   - Make chat bubbles more visually appealing
-
-4. **Performance**
-   - Object pooling for audio clips
-   - Reduce SpringBone update frequency
-   - Add LOD for distant rendering
 
 ### Medium Priority
 5. **Voice Input**

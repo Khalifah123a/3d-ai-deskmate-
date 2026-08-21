@@ -16,6 +16,7 @@ public class VRMLoader : MonoBehaviour
     private bool _isLoading = false;
     private PlaceholderAvatar _placeholder;
     private VRMLookAtHead _lookAtHead;
+    private Transform _headTransform;
 
     public bool IsLoaded => _loadedInstance != null;
     public GameObject LoadedCharacter => _loadedInstance != null ? _loadedInstance.Root : null;
@@ -148,9 +149,32 @@ public class VRMLoader : MonoBehaviour
             la.enabled = true;
         }
 
+        // Find head transform for mouse tracking
+        _headTransform = FindHeadBone(root);
+
         // Keep VRMLookAtBoneApplyer disabled (causes arrow glitch)
         foreach (var lb in root.GetComponentsInChildren<VRMLookAtBoneApplyer>(true))
             lb.enabled = false;
+    }
+
+    private Transform FindHeadBone(GameObject root)
+    {
+        // Try HumanBodyBones first
+        var animator = root.GetComponent<Animator>();
+        if (animator != null && animator.isHuman)
+        {
+            var head = animator.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null) return head;
+        }
+
+        // Fallback to VRM bone names
+        foreach (var name in new[] { "J_Bip_C_Head", "Head", "頭" })
+        {
+            var t = root.transform.Find(name);
+            if (t != null) return t;
+        }
+
+        return null;
     }
 
     private void SetupVRM(GameObject root)
@@ -182,7 +206,7 @@ public class VRMLoader : MonoBehaviour
         var lipSync = root.AddComponent<LipSyncManager>();
         lipSync.Init(expr, idle);
 
-        Debug.Log("[VRM] Setup: " + springs.Length + " springs (disabled), LookAt disabled, idle+expression+lip ready");
+        Debug.Log("[VRM] Setup complete");
     }
 
     private void Cleanup()

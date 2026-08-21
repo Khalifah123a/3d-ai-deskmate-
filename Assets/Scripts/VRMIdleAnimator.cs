@@ -29,7 +29,17 @@ public class VRMIdleAnimator : MonoBehaviour
     private float _microExprTimer;
     private float _nextMicroExprTime;
     private bool _isSpeaking;
+    private bool _isThinking;
     private bool _initialized;
+
+    // Nodding for thinking
+    private float _nodTimer;
+    private float _nextNodTime;
+    private Quaternion _nodStartRot;
+
+    // Hand gesture when speaking
+    private float _gestureTimer;
+    private bool _isGesturing;
 
     public void Init(GameObject root)
     {
@@ -63,6 +73,7 @@ public class VRMIdleAnimator : MonoBehaviour
         _initialized = true;
         _nextBlinkTime = Random.Range(2f, 5f);
         _nextMicroExprTime = Random.Range(3f, 8f);
+        _nextNodTime = Random.Range(5f, 10f);
     }
 
     private void ApplyRestPose()
@@ -96,18 +107,47 @@ public class VRMIdleAnimator : MonoBehaviour
         return null;
     }
 
-    public void SetSpeaking(bool speaking) { _isSpeaking = speaking; }
+    public void SetSpeaking(bool speaking) 
+    { 
+        _isSpeaking = speaking;
+        _isGesturing = speaking;
+        _gestureTimer = 0f;
+    }
+
+    public void SetThinking(bool thinking) 
+    { 
+        _isThinking = thinking;
+        if (thinking)
+        {
+            _nodTimer = 0f;
+            _nextNodTime = Random.Range(0.5f, 1.5f);
+        }
+    }
 
     void LateUpdate()
     {
         if (!_initialized) return;
         _time += Time.deltaTime;
 
-        // Head: micro-movements (increased amplitude for better visibility)
+        // Head: micro-movements + weight shift + nodding when thinking
         if (_headBone != null)
         {
             float headPitch = Mathf.Sin(_time * 0.8f) * 3f;
             float headYaw = Mathf.Cos(_time * 0.5f) * 4f;
+            
+            // Add nodding when thinking
+            if (_isThinking)
+            {
+                _nodTimer += Time.deltaTime;
+                if (_nodTimer >= _nextNodTime)
+                {
+                    _nodTimer = 0f;
+                    _nextNodTime = Random.Range(0.8f, 2f);
+                    _nodStartRot = _headBone.localRotation;
+                    StartCoroutine(NodRoutine());
+                }
+            }
+            
             _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
                 _headDefault * Quaternion.Euler(headPitch, headYaw, 0f), Time.deltaTime * 3f);
         }
@@ -130,9 +170,17 @@ public class VRMIdleAnimator : MonoBehaviour
                 _spineDefault * Quaternion.Euler(swayX, 0, swayZ), Time.deltaTime * 3f);
         }
 
-        // Arms: continuous sway (increased amplitude for better visibility)
+        // Arms: continuous sway + gestures when speaking
         float armSwayLeft = Mathf.Sin(_time * 0.8f) * 3f;
         float armSwayRight = Mathf.Sin(_time * 0.8f + Mathf.PI) * 3f;
+
+        // Add gesture when speaking
+        if (_isGesturing && _rightUpperArm != null)
+        {
+            _gestureTimer += Time.deltaTime;
+            float gestureAmount = Mathf.Sin(_gestureTimer * 3f) * 5f;
+            armSwayRight += gestureAmount;
+        }
 
         if (_leftUpperArm != null)
             _leftUpperArm.localRotation = Quaternion.Slerp(_leftUpperArm.localRotation,
@@ -158,6 +206,25 @@ public class VRMIdleAnimator : MonoBehaviour
             _nextMicroExprTime = Random.Range(5f, 12f);
             StartCoroutine(MicroExpressionRoutine());
         }
+    }
+
+    private IEnumerator NodRoutine()
+    {
+        if (_headBone == null) yield break;
+        
+        float duration = 0.3f;
+        float elapsed = 0f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float nodAngle = Mathf.Sin(t * Mathf.PI) * 10f;
+            _headBone.localRotation = _nodStartRot * Quaternion.Euler(nodAngle, 0, 0);
+            yield return null;
+        }
+        
+        _headBone.localRotation = _nodStartRot;
     }
 
     private IEnumerator BlinkRoutine()
