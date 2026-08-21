@@ -5,30 +5,47 @@ public class LookAtMouse : MonoBehaviour
 {
     private Transform _target;
     private Camera _mainCamera;
+    private VRMLookAtHead _lookAtHead;
+    private bool _initialized;
 
-    void Start()
+    public void Initialize(VRMLookAtHead lookAt, Camera cam)
     {
+        _lookAtHead = lookAt;
+        _mainCamera = cam;
+
+        if (_mainCamera == null)
+            _mainCamera = Camera.main;
+
+        if (_mainCamera == null)
+        {
+            Debug.LogWarning("[LookAtMouse] No camera found!");
+            return;
+        }
+
+        // Create a target object that VRMLookAtHead will follow
         var go = new GameObject("MouseLookTarget");
         _target = go.transform;
-        _target.position = transform.position + transform.forward * 2f;
+        _target.position = _mainCamera.transform.position + _mainCamera.transform.forward * 3f;
 
-        var vrmLookAt = GetComponent<VRMLookAtHead>();
-        if (vrmLookAt != null)
-            vrmLookAt.Target = _target;
+        // Set VRMLookAtHead target to our mouse-driven object
+        if (_lookAtHead != null)
+            _lookAtHead.Target = _target;
 
-        _mainCamera = Camera.main;
-        Debug.Log("[LookAt] Camera: " + (_mainCamera != null) + " VRMLookAt: " + (vrmLookAt != null));
+        _initialized = true;
+        Debug.Log("[LookAtMouse] Initialized - VRMLookAt will follow mouse cursor");
     }
 
     void Update()
     {
-        if (_mainCamera == null) return;
+        if (!_initialized || _mainCamera == null || _target == null) return;
 
+        // Convert mouse position to world space
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = Mathf.Abs(_mainCamera.transform.position.z - transform.position.z);
         Vector3 worldPos = _mainCamera.ScreenToWorldPoint(mousePos);
 
-        _target.position = Vector3.Lerp(_target.position, worldPos, Time.deltaTime * 3f);
+        // Smooth follow mouse
+        _target.position = Vector3.Lerp(_target.position, worldPos, Time.deltaTime * 5f);
     }
 
     void OnDestroy()

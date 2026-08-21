@@ -7,6 +7,7 @@ public class ExpressionPresets : MonoBehaviour
 {
     private ExpressionController _expressionController;
     private VRMBlendShapeProxy _proxy;
+    private SceneLighting _sceneLighting;
     private Coroutine _idleCoroutine;
     
     // Mood states
@@ -44,15 +45,22 @@ public class ExpressionPresets : MonoBehaviour
         { "cerita", Mood.Thoughtful }
     };
     
+    public void Initialize(ExpressionController expr)
+    {
+        _expressionController = expr;
+        _proxy = GetComponent<VRMBlendShapeProxy>();
+        _sceneLighting = FindAnyObjectByType<SceneLighting>();
+    }
+    
     void Awake()
     {
-        _expressionController = GetComponent<ExpressionController>();
-        _proxy = GetComponent<VRMBlendShapeProxy>();
-        
+        // Fallback if not initialized via VRMLoader
         if (_expressionController == null)
-            _expressionController = FindAnyObjectByType<ExpressionController>();
+            _expressionController = GetComponent<ExpressionController>();
         if (_proxy == null)
-            _proxy = FindAnyObjectByType<VRMBlendShapeProxy>();
+            _proxy = GetComponent<VRMBlendShapeProxy>();
+        if (_sceneLighting == null)
+            _sceneLighting = FindAnyObjectByType<SceneLighting>();
     }
     
     void Start()
@@ -101,6 +109,10 @@ public class ExpressionPresets : MonoBehaviour
                 break;
         }
         
+        // Update scene lighting based on mood
+        if (_sceneLighting != null)
+            _sceneLighting.SetMoodFromEmotion(mood.ToString().ToLower());
+        
         Debug.Log("[Expr] Mood changed to: " + mood);
     }
     
@@ -136,7 +148,6 @@ public class ExpressionPresets : MonoBehaviour
             
             if (_currentMood == Mood.Neutral)
             {
-                // Subtle mood variations for idle state
                 int variation = Random.Range(0, 3);
                 switch (variation)
                 {
@@ -151,7 +162,6 @@ public class ExpressionPresets : MonoBehaviour
                         SetMood(Mood.Neutral);
                         break;
                     case 2:
-                        // Just stay neutral
                         break;
                 }
             }

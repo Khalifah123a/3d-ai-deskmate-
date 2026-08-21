@@ -31,6 +31,7 @@ public class VRMIdleAnimator : MonoBehaviour
     private bool _isSpeaking;
     private bool _isThinking;
     private bool _initialized;
+    private LookAtMouse _lookAtMouse; // Skip head when mouse tracking
 
     // Nodding for thinking
     private float _nodTimer;
@@ -45,6 +46,7 @@ public class VRMIdleAnimator : MonoBehaviour
     {
         _proxy = root.GetComponent<VRMBlendShapeProxy>();
         _animator = root.GetComponent<Animator>();
+        _lookAtMouse = root.GetComponent<LookAtMouse>();
 
         if (_animator != null && _animator.isHuman)
         {
@@ -78,7 +80,6 @@ public class VRMIdleAnimator : MonoBehaviour
 
     private void ApplyRestPose()
     {
-        // Slightly more open arms for better idle appearance
         if (_leftUpperArm != null)
             _leftUpperArm.localRotation = Quaternion.Euler(0f, 0f, 75f);
         if (_rightUpperArm != null)
@@ -129,30 +130,30 @@ public class VRMIdleAnimator : MonoBehaviour
         if (!_initialized) return;
         _time += Time.deltaTime;
 
-        // Head: micro-movements + weight shift + nodding when thinking
-        if (_headBone != null)
+        // Head: only move if LookAtMouse is NOT active (avoids conflict)
+        if (_headBone != null && _lookAtMouse == null)
         {
             float headPitch = Mathf.Sin(_time * 0.8f) * 3f;
             float headYaw = Mathf.Cos(_time * 0.5f) * 4f;
-            
-            // Add nodding when thinking
-            if (_isThinking)
-            {
-                _nodTimer += Time.deltaTime;
-                if (_nodTimer >= _nextNodTime)
-                {
-                    _nodTimer = 0f;
-                    _nextNodTime = Random.Range(0.8f, 2f);
-                    _nodStartRot = _headBone.localRotation;
-                    StartCoroutine(NodRoutine());
-                }
-            }
             
             _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
                 _headDefault * Quaternion.Euler(headPitch, headYaw, 0f), Time.deltaTime * 3f);
         }
 
-        // Chest: breathing + weight shift (increased amplitude)
+        // Nodding when thinking (works even with LookAtMouse)
+        if (_headBone != null && _isThinking)
+        {
+            _nodTimer += Time.deltaTime;
+            if (_nodTimer >= _nextNodTime)
+            {
+                _nodTimer = 0f;
+                _nextNodTime = Random.Range(0.8f, 2f);
+                _nodStartRot = _headBone.localRotation;
+                StartCoroutine(NodRoutine());
+            }
+        }
+
+        // Chest: breathing + weight shift
         if (_chestBone != null)
         {
             float breath = Mathf.Sin(_time * 1.6f) * 2.5f;
@@ -161,7 +162,7 @@ public class VRMIdleAnimator : MonoBehaviour
                 _chestDefault * Quaternion.Euler(breath, weightShift, 0), Time.deltaTime * 3f);
         }
 
-        // Spine: body sway (increased amplitude)
+        // Spine: body sway
         if (_spineBone != null)
         {
             float swayX = Mathf.Sin(_time * 0.7f) * 2f;
@@ -174,7 +175,6 @@ public class VRMIdleAnimator : MonoBehaviour
         float armSwayLeft = Mathf.Sin(_time * 0.8f) * 3f;
         float armSwayRight = Mathf.Sin(_time * 0.8f + Mathf.PI) * 3f;
 
-        // Add gesture when speaking
         if (_isGesturing && _rightUpperArm != null)
         {
             _gestureTimer += Time.deltaTime;
@@ -198,7 +198,7 @@ public class VRMIdleAnimator : MonoBehaviour
             StartCoroutine(BlinkRoutine());
         }
 
-        // Micro-expressions (subtle facial changes)
+        // Micro-expressions
         _microExprTimer += Time.deltaTime;
         if (_microExprTimer >= _nextMicroExprTime && !_isSpeaking && _proxy != null)
         {
@@ -242,10 +242,9 @@ public class VRMIdleAnimator : MonoBehaviour
     {
         if (_proxy == null) yield break;
 
-        // Randomly choose: subtle smile, brow raise, or slight mouth movement
         int exprType = Random.Range(0, 3);
         BlendShapeKey key;
-        float maxWeight = 0.2f; // Slightly increased for better visibility
+        float maxWeight = 0.2f;
 
         switch (exprType)
         {

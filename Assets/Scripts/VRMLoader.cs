@@ -102,13 +102,14 @@ public class VRMLoader : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
 
-        // Enable SpringBone physics (hair/clothes) - with smaller amplitude
+        // Enable SpringBone physics (hair/clothes) - with stable stiffness
         var springs = root.GetComponentsInChildren<VRMSpringBone>(true);
         foreach (var s in springs)
         {
             s.enabled = true;
             s.m_gravityDir = new Vector3(0, -1, 0);
-            s.m_stiffnessForce = 0.5f; // Reduced stiffness for smoother movement
+            s.m_stiffnessForce = 1.0f; // Increased for stability
+            s.m_drag = 0.7f; // Add drag to reduce jitter
         }
         Debug.Log("[VRM] Enabled " + springs.Length + " SpringBone components");
 
@@ -121,24 +122,28 @@ public class VRMLoader : MonoBehaviour
         {
             _lookAtHead.enabled = true;
             
-            // Set target to camera
+            // Set target to camera for initial position
             var cam = Camera.main;
             if (cam != null)
             {
                 _lookAtHead.Target = cam.transform;
-                Debug.Log("[VRM] Enabled VRMLookAtHead (target: " + cam.name + " at " + cam.transform.position + ")");
+                Debug.Log("[VRM] Enabled VRMLookAtHead (target: " + cam.name + ")");
             }
             else
             {
                 Debug.LogWarning("[VRM] Camera.main is null!");
             }
+
+            // Add LookAtMouse for mouse tracking (overrides camera target)
+            var lookAtMouse = root.AddComponent<LookAtMouse>();
+            lookAtMouse.Initialize(_lookAtHead, cam);
         }
         else
         {
             Debug.LogWarning("[VRM] VRMLookAtHead not found on character!");
         }
 
-        // Find head transform for mouse tracking
+        // Find head transform for other systems
         _headTransform = FindHeadBone(root);
 
         // Keep VRMLookAtBoneApplyer disabled (causes arrow glitch)
@@ -148,7 +153,6 @@ public class VRMLoader : MonoBehaviour
 
     private Transform FindHeadBone(GameObject root)
     {
-        // Try HumanBodyBones first
         var animator = root.GetComponent<Animator>();
         if (animator != null && animator.isHuman)
         {
@@ -156,7 +160,6 @@ public class VRMLoader : MonoBehaviour
             if (head != null) return head;
         }
 
-        // Fallback to VRM bone names
         foreach (var name in new[] { "J_Bip_C_Head", "Head", "頭" })
         {
             var t = root.transform.Find(name);
@@ -183,20 +186,23 @@ public class VRMLoader : MonoBehaviour
         foreach (var lh in root.GetComponentsInChildren<VRMLookAtHead>(true))
             lh.enabled = false;
 
-        // Add our scripts
+        // Add idle animator (controls breathing, arm sway, blink)
         var idle = root.AddComponent<VRMIdleAnimator>();
         idle.Init(root);
 
+        // Add expression system
         var expr = root.AddComponent<ExpressionController>();
         var animBridge = root.AddComponent<VRMAnimationBridge>();
         animBridge.Init(root);
         expr.InitBridge();
 
+        // Add lip sync
         var lipSync = root.AddComponent<LipSyncManager>();
         lipSync.Init(expr, idle);
 
         // Add expression presets for mood-based reactions
         var presets = root.AddComponent<ExpressionPresets>();
+        presets.Initialize(expr);
 
         Debug.Log("[VRM] Setup complete");
     }
