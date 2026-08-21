@@ -36,7 +36,7 @@ public class VRMAnimationBridge : MonoBehaviour
         if (preset == BlendShapePreset.Unknown) return;
 
         var key = BlendShapeKey.CreateFromPreset(preset);
-        _blendShapeProxy.ImmediatelySetValue(key, Mathf.Clamp01(weight));
+        _blendShapeProxy.ImmediatelySetValue(key, Mathf.Clamp01(weight * 0.5f)); // Reduced lip sync intensity
     }
 
     public void ResetExpressions(float fadeTime = 0.3f)
@@ -67,10 +67,10 @@ public class VRMAnimationBridge : MonoBehaviour
         while (e < fadeTime)
         {
             e += Time.deltaTime;
-            _blendShapeProxy.ImmediatelySetValue(targetKey, Mathf.Lerp(0f, 0.75f, e / fadeTime));
+            _blendShapeProxy.ImmediatelySetValue(targetKey, Mathf.Lerp(0f, 0.8f, e / fadeTime));
             yield return null;
         }
-        _blendShapeProxy.ImmediatelySetValue(targetKey, 0.75f);
+        _blendShapeProxy.ImmediatelySetValue(targetKey, 0.8f);
 
         if (duration > 0f)
         {

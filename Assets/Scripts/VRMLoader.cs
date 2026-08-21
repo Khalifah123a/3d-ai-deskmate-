@@ -9,12 +9,13 @@ public class VRMLoader : MonoBehaviour
     public string vrmPath = "";
     public Vector3 spawnPosition = Vector3.zero;
     public Vector3 spawnRotation = new Vector3(0, 180, 0);
-    public Vector3 spawnScale = new Vector3(0.8f, 0.8f, 0.8f);
+    public Vector3 spawnScale = new Vector3(1f, 1f, 1f);
 
     private VRMImporterContext _context;
     private RuntimeGltfInstance _loadedInstance;
     private bool _isLoading = false;
     private PlaceholderAvatar _placeholder;
+    private VRMLookAtHead _lookAtHead;
 
     public bool IsLoaded => _loadedInstance != null;
     public GameObject LoadedCharacter => _loadedInstance != null ? _loadedInstance.Root : null;
@@ -79,7 +80,7 @@ public class VRMLoader : MonoBehaviour
 
         SetupVRM(root);
 
-        Debug.Log("[VRM] Loaded! Euler: " + root.transform.eulerAngles);
+        Debug.Log("[VRM] Loaded! Position: " + root.transform.position + " Rotation: " + root.transform.eulerAngles);
 
         // Disable VRMLookAtBoneApplyer permanently (causes arrow glitch)
         foreach (var lb in root.GetComponentsInChildren<VRMLookAtBoneApplyer>(true))
@@ -89,7 +90,7 @@ public class VRMLoader : MonoBehaviour
         var firstPerson = root.GetComponent<VRMFirstPerson>();
         if (firstPerson != null) firstPerson.enabled = false;
 
-        // Re-enable LookAtHead + SpringBone after 2 seconds
+        // Re-enable LookAtHead + SpringBone after 1 second
         StartCoroutine(EnablePhysicsDelayed(root));
 
         _isLoading = false;
@@ -98,26 +99,53 @@ public class VRMLoader : MonoBehaviour
 
     private IEnumerator EnablePhysicsDelayed(GameObject root)
     {
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(1f);
 
-        // Enable SpringBone physics (hair/clothes)
+        // Enable SpringBone physics (hair/clothes) - with smaller amplitude
         var springs = root.GetComponentsInChildren<VRMSpringBone>(true);
         foreach (var s in springs)
         {
             s.enabled = true;
             s.m_gravityDir = new Vector3(0, -1, 0);
+            s.m_stiffnessForce = 0.5f; // Reduced stiffness for smoother movement
         }
         Debug.Log("[VRM] Enabled " + springs.Length + " SpringBone components");
 
-        yield return new WaitForSeconds(0.5f);
+        // Enable VRMLookAtHead - find it on root or children
+        _lookAtHead = root.GetComponent<VRMLookAtHead>();
+        if (_lookAtHead == null)
+            _lookAtHead = root.GetComponentInChildren<VRMLookAtHead>();
 
-        // Enable VRMLookAtHead with camera target
-        var lookAt = root.GetComponent<VRMLookAtHead>();
-        if (lookAt != null && Camera.main != null)
+        if (_lookAtHead != null)
         {
-            lookAt.Target = Camera.main.transform;
-            lookAt.enabled = true;
-            Debug.Log("[VRM] Enabled VRMLookAtHead (target: camera)");
+            _lookAtHead.enabled = true;
+            
+            // Set target to camera
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                _lookAtHead.Target = cam.transform;
+                Debug.Log("[VRM] Enabled VRMLookAtHead (target: " + cam.name + " at " + cam.transform.position + ")");
+            }
+            else
+            {
+                Debug.LogWarning("[VRM] Camera.main is null!");
+            }
+            
+            // Ensure lookAtWidth is reasonable
+            _lookAtHead.m_headYawPitch = _lookAtHead.m_headYawPitch;
+        }
+        else
+        {
+            Debug.LogWarning("[VRM] VRMLookAtHead not found on character!");
+        }
+
+        // Also enable any LookAt components on children
+        foreach (var la in root.GetComponentsInChildren<VRMLookAt>(true))
+        {
+            if (Camera.main != null)
+                la.Target = Camera.main.transform;
+            la.enabled = true;
         }
 
         // Keep VRMLookAtBoneApplyer disabled (causes arrow glitch)

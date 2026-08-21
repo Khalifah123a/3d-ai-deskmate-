@@ -85,15 +85,16 @@ public class LipSyncManager : MonoBehaviour
     {
         if (_expressionController == null) return;
 
-        if (amplitude > 0.015f)
+        // Reduced threshold and amplitude for smoother lip sync
+        if (amplitude > 0.01f)
         {
-            float targetOpen = Mathf.Clamp01(amplitude * 1.5f);
-            _visemeWeights[0] = Mathf.Lerp(_visemeWeights[0], targetOpen, Time.deltaTime * 20f);
+            float targetOpen = Mathf.Clamp01(amplitude * 1.0f); // Reduced multiplier
+            _visemeWeights[0] = Mathf.Lerp(_visemeWeights[0], targetOpen, Time.deltaTime * 15f);
             _expressionController.SetViseme("aa", _visemeWeights[0]);
 
             for (int i = 1; i < 5; i++)
             {
-                _visemeWeights[i] = Mathf.Lerp(_visemeWeights[i], 0f, Time.deltaTime * 15f);
+                _visemeWeights[i] = Mathf.Lerp(_visemeWeights[i], 0f, Time.deltaTime * 10f);
                 _expressionController.SetViseme(_visemes[i], _visemeWeights[i]);
             }
         }

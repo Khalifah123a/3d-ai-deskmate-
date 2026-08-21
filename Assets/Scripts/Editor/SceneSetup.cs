@@ -14,20 +14,31 @@ public class SceneSetup
         foreach (var go in toDestroy)
             Object.DestroyImmediate(go);
 
+        // Camera - closer and better positioned for portrait view
         GameObject camObj = new GameObject("Main Camera");
         Camera cam = camObj.AddComponent<Camera>();
         camObj.tag = "MainCamera";
         camObj.AddComponent<AudioListener>();
-        cam.transform.position = new Vector3(0, 1.2f, -2.5f);
-        cam.transform.LookAt(new Vector3(0, 1f, 0));
+        cam.transform.position = new Vector3(0, 1.4f, -3f);
+        cam.transform.LookAt(new Vector3(0, 1.2f, 0));
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.08f, 0.08f, 0.12f);
         cam.nearClipPlane = 0.1f;
+        cam.orthographic = false;
+        cam.orthographicSize = 5f;
 
         GameObject lightObj = new GameObject("Directional Light");
         Light light = lightObj.AddComponent<Light>();
         light.type = LightType.Directional;
         lightObj.transform.rotation = Quaternion.Euler(50, -30, 0);
+
+        // Second light for better illumination
+        GameObject light2Obj = new GameObject("Fill Light");
+        Light light2 = light2Obj.AddComponent<Light>();
+        light2.type = LightType.Directional;
+        light2Obj.transform.rotation = Quaternion.Euler(30, 180, 0);
+        light2.color = new Color(0.6f, 0.7f, 0.8f);
+        light2.intensity = 0.5f;
 
         new GameObject("WebSocket").AddComponent<WebSocketClient>();
         new GameObject("AudioManager").AddComponent<AudioManager>();
@@ -64,40 +75,42 @@ public class SceneSetup
             eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
         }
 
+        // Status bar with larger font
         GameObject statusBar = CreatePanel(canvasObj.transform, "StatusBar",
-            new Vector2(0, 0), new Vector2(1, 0.04f), new Color(0.05f, 0.05f, 0.08f, 1f));
+            new Vector2(0, 0), new Vector2(1, 0.05f), new Color(0.05f, 0.05f, 0.08f, 1f));
         Text statusText = CreateText(statusBar.transform, "StatusText", font,
-            "Backend: Connecting...", 14, Color.yellow, TextAnchor.MiddleLeft);
+            "Backend: Connecting...", 24, Color.yellow, TextAnchor.MiddleLeft);
         RectTransform stRect = statusText.GetComponent<RectTransform>();
-        stRect.offsetMin = new Vector2(15, 0);
-        stRect.offsetMax = new Vector2(-15, 0);
+        stRect.offsetMin = new Vector2(20, 0);
+        stRect.offsetMax = new Vector2(-20, 0);
 
+        // Input bar with larger font
         GameObject inputBar = CreatePanel(canvasObj.transform, "InputBar",
-            new Vector2(0, 0.04f), new Vector2(1, 0.12f), new Color(0.1f, 0.1f, 0.15f, 0.95f));
+            new Vector2(0, 0.05f), new Vector2(1, 0.12f), new Color(0.1f, 0.1f, 0.15f, 0.95f));
 
         GameObject inputObj = CreatePanel(inputBar.transform, "InputField",
             new Vector2(0, 0), new Vector2(1, 1), new Color(0.2f, 0.2f, 0.28f, 1f));
         RectTransform inputRect = inputObj.GetComponent<RectTransform>();
-        inputRect.offsetMin = new Vector2(10, 8);
-        inputRect.offsetMax = new Vector2(-80, -8);
+        inputRect.offsetMin = new Vector2(15, 10);
+        inputRect.offsetMax = new Vector2(-100, -10);
 
         InputField inputField = inputObj.AddComponent<InputField>();
 
         GameObject inputTextObj = CreatePanel(inputObj.transform, "Text",
             Vector2.zero, Vector2.one, Color.clear);
         Text inputText = CreateText(inputTextObj.transform, "", font,
-            "", 22, Color.white, TextAnchor.MiddleLeft);
+            "", 28, Color.white, TextAnchor.MiddleLeft);
         RectTransform itr = inputTextObj.GetComponent<RectTransform>();
-        itr.offsetMin = new Vector2(10, 0);
+        itr.offsetMin = new Vector2(15, 0);
         itr.offsetMax = Vector2.zero;
 
         GameObject phObj = CreatePanel(inputObj.transform, "Placeholder",
             Vector2.zero, Vector2.one, Color.clear);
         Text phText = CreateText(phObj.transform, "", font,
-            "Ketik pesan...", 22, new Color(0.5f, 0.5f, 0.55f), TextAnchor.MiddleLeft);
+            "Ketik pesan...", 28, new Color(0.5f, 0.5f, 0.55f), TextAnchor.MiddleLeft);
         phText.fontStyle = FontStyle.Italic;
         RectTransform phr = phObj.GetComponent<RectTransform>();
-        phr.offsetMin = new Vector2(10, 0);
+        phr.offsetMin = new Vector2(15, 0);
         phr.offsetMax = Vector2.zero;
 
         inputField.textComponent = inputText;
@@ -109,23 +122,24 @@ public class SceneSetup
         btnRect.anchorMin = new Vector2(1, 0);
         btnRect.anchorMax = new Vector2(1, 1);
         btnRect.pivot = new Vector2(1, 0.5f);
-        btnRect.offsetMin = new Vector2(-70, 8);
-        btnRect.offsetMax = new Vector2(-8, -8);
+        btnRect.offsetMin = new Vector2(-90, 10);
+        btnRect.offsetMax = new Vector2(-10, -10);
         Button btn = btnObj.AddComponent<Button>();
 
         Text btnLabel = CreateText(btnObj.transform, "Label", font,
-            "Kirim", 18, Color.white, TextAnchor.MiddleCenter);
+            "Kirim", 24, Color.white, TextAnchor.MiddleCenter);
 
+        // Response area with larger font and better visibility
         GameObject respArea = CreatePanel(canvasObj.transform, "ResponseArea",
-            new Vector2(0.02f, 0.12f), new Vector2(0.98f, 0.96f), new Color(0, 0, 0, 0.7f));
+            new Vector2(0.02f, 0.17f), new Vector2(0.98f, 0.98f), new Color(0, 0, 0, 0.75f));
 
         GameObject respTextObj = CreatePanel(respArea.transform, "ResponseText",
             Vector2.zero, Vector2.one, Color.clear);
         RectTransform respTextRect = respTextObj.GetComponent<RectTransform>();
-        respTextRect.offsetMin = new Vector2(15, 15);
-        respTextRect.offsetMax = new Vector2(-15, -15);
+        respTextRect.offsetMin = new Vector2(20, 20);
+        respTextRect.offsetMax = new Vector2(-20, -20);
         Text respText = CreateText(respTextObj.transform, "", font,
-            "AI: Halo! Ketik pesan di bawah.\n", 18, Color.white, TextAnchor.UpperLeft);
+            "AI: Halo! Ketik pesan di bawah.\n", 24, Color.white, TextAnchor.UpperLeft);
         respText.supportRichText = true;
 
         ScrollRect scroll = respArea.AddComponent<ScrollRect>();

@@ -58,7 +58,7 @@ public class UIManager : MonoBehaviour
         if (legacyResponseText != null)
         {
             legacyResponseText.supportRichText = true;
-            legacyResponseText.text += "<color=#FFFFFF>You: " + text + "</color>\n";
+            legacyResponseText.text += "<color=#FFFFFF><b>You:</b> " + text + "</color>\n";
         }
         ScrollToBottom();
     }
@@ -68,7 +68,7 @@ public class UIManager : MonoBehaviour
         if (legacyResponseText != null)
         {
             legacyResponseText.supportRichText = true;
-            legacyResponseText.text += "<color=#7EC8E3>AI: " + text + "</color>\n";
+            legacyResponseText.text += "<color=#7EC8E3><b>AI:</b> " + text + "</color>\n";
         }
         ScrollToBottom();
 
@@ -83,7 +83,7 @@ public class UIManager : MonoBehaviour
     {
         if (legacyStatusText != null)
         {
-            legacyStatusText.text = connected ? "Connected" : "Disconnected";
+            legacyStatusText.text = connected ? "✓ Connected" : "✗ Disconnected";
             legacyStatusText.color = connected ? Color.green : Color.red;
         }
     }

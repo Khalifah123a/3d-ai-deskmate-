@@ -67,6 +67,7 @@ public class VRMIdleAnimator : MonoBehaviour
 
     private void ApplyRestPose()
     {
+        // Slightly more open arms for better idle appearance
         if (_leftUpperArm != null)
             _leftUpperArm.localRotation = Quaternion.Euler(0f, 0f, 75f);
         if (_rightUpperArm != null)
@@ -102,43 +103,43 @@ public class VRMIdleAnimator : MonoBehaviour
         if (!_initialized) return;
         _time += Time.deltaTime;
 
-        // Head: micro-movements + weight shift
+        // Head: micro-movements (increased amplitude for better visibility)
         if (_headBone != null)
         {
-            float headPitch = Mathf.Sin(_time * 0.8f) * 1.5f;
-            float headYaw = Mathf.Cos(_time * 0.5f) * 2.0f;
+            float headPitch = Mathf.Sin(_time * 0.8f) * 3f;
+            float headYaw = Mathf.Cos(_time * 0.5f) * 4f;
             _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
-                _headDefault * Quaternion.Euler(headPitch, headYaw, 0f), Time.deltaTime * 5f);
+                _headDefault * Quaternion.Euler(headPitch, headYaw, 0f), Time.deltaTime * 3f);
         }
 
-        // Chest: breathing + weight shift
+        // Chest: breathing + weight shift (increased amplitude)
         if (_chestBone != null)
         {
-            float breath = Mathf.Sin(_time * 1.6f) * 1.2f;
-            float weightShift = Mathf.Sin(_time * 0.3f) * 0.5f;
+            float breath = Mathf.Sin(_time * 1.6f) * 2.5f;
+            float weightShift = Mathf.Sin(_time * 0.3f) * 1.5f;
             _chestBone.localRotation = Quaternion.Slerp(_chestBone.localRotation,
-                _chestDefault * Quaternion.Euler(breath, weightShift, 0), Time.deltaTime * 5f);
+                _chestDefault * Quaternion.Euler(breath, weightShift, 0), Time.deltaTime * 3f);
         }
 
-        // Spine: body sway (Lissajous pattern)
+        // Spine: body sway (increased amplitude)
         if (_spineBone != null)
         {
-            float swayX = Mathf.Sin(_time * 0.7f) * 1.0f;
-            float swayZ = Mathf.Cos(_time * 0.4f) * 0.8f;
+            float swayX = Mathf.Sin(_time * 0.7f) * 2f;
+            float swayZ = Mathf.Cos(_time * 0.4f) * 1.5f;
             _spineBone.localRotation = Quaternion.Slerp(_spineBone.localRotation,
-                _spineDefault * Quaternion.Euler(swayX, 0, swayZ), Time.deltaTime * 5f);
+                _spineDefault * Quaternion.Euler(swayX, 0, swayZ), Time.deltaTime * 3f);
         }
 
-        // Arms: continuous sway (no freeze when speaking)
-        float armSwayLeft = Mathf.Sin(_time * 0.8f) * 1.5f;
-        float armSwayRight = Mathf.Sin(_time * 0.8f + Mathf.PI) * 1.5f;
+        // Arms: continuous sway (increased amplitude for better visibility)
+        float armSwayLeft = Mathf.Sin(_time * 0.8f) * 3f;
+        float armSwayRight = Mathf.Sin(_time * 0.8f + Mathf.PI) * 3f;
 
         if (_leftUpperArm != null)
             _leftUpperArm.localRotation = Quaternion.Slerp(_leftUpperArm.localRotation,
-                _leftArmDefault * Quaternion.Euler(0, 0, armSwayLeft), Time.deltaTime * 5f);
+                _leftArmDefault * Quaternion.Euler(0, 0, armSwayLeft), Time.deltaTime * 3f);
         if (_rightUpperArm != null)
             _rightUpperArm.localRotation = Quaternion.Slerp(_rightUpperArm.localRotation,
-                _rightArmDefault * Quaternion.Euler(0, 0, armSwayRight), Time.deltaTime * 5f);
+                _rightArmDefault * Quaternion.Euler(0, 0, armSwayRight), Time.deltaTime * 3f);
 
         // Blinking
         _blinkTimer += Time.deltaTime;
@@ -177,7 +178,7 @@ public class VRMIdleAnimator : MonoBehaviour
         // Randomly choose: subtle smile, brow raise, or slight mouth movement
         int exprType = Random.Range(0, 3);
         BlendShapeKey key;
-        float maxWeight = 0.15f;
+        float maxWeight = 0.2f; // Slightly increased for better visibility
 
         switch (exprType)
         {
