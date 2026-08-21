@@ -23,6 +23,7 @@
 - ✅ Keyword reactions: avatar reacts to specific words (halo, terima kasih, tolong, dll)
 - ✅ Voice Input: microphone button (🎤) with recording, silence detection, auto-stop
 - ✅ Voice manager integrated with UIManager for recording state management
+- ✅ Scene Lighting: day/night cycle + mood-based color/intensity changes
 
 ## How to Apply Fixes in Unity
 

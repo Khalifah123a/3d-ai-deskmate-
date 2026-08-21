@@ -43,6 +43,7 @@ public class SceneSetup
         new GameObject("WebSocket").AddComponent<WebSocketClient>();
         new GameObject("AudioManager").AddComponent<AudioManager>();
         new GameObject("VoiceInput").AddComponent<VoiceInputManager>();
+        new GameObject("SceneLighting").AddComponent<SceneLighting>();
         GameObject vrmLoader = new GameObject("VRMLoader");
         vrmLoader.AddComponent<VRMLoader>();
         vrmLoader.AddComponent<PlaceholderAvatar>();
