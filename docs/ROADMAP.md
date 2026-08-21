@@ -25,6 +25,11 @@
 - ✅ Voice manager integrated with UIManager for recording state management
 - ✅ Scene Lighting: day/night cycle + mood-based color/intensity changes
 
+### v1.2 - Low Priority Features
+- ✅ Chat Persistence: save/load chat history via PlayerPrefs (max 50 entries)
+- ✅ User preferences storage via PlayerPrefs
+- ✅ Chat history restored on app startup
+
 ## How to Apply Fixes in Unity
 
 1. **Open Unity** and wait for recompilation
