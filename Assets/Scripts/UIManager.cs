@@ -14,6 +14,7 @@ public class UIManager : MonoBehaviour
     private VRMIdleAnimator _idleAnimator;
     private ExpressionPresets _expressionPresets;
     private VoiceInputManager _voiceInput;
+    private ChatPersistence _persistence;
     private bool _isProcessing = false;
     private string _typingDots = "";
     private float _typingTimer;
@@ -25,6 +26,7 @@ public class UIManager : MonoBehaviour
         _idleAnimator = FindAnyObjectByType<VRMIdleAnimator>();
         _expressionPresets = FindAnyObjectByType<ExpressionPresets>();
         _voiceInput = FindAnyObjectByType<VoiceInputManager>();
+        _persistence = FindAnyObjectByType<ChatPersistence>();
 
         if (legacySendButton != null)
             legacySendButton.onClick.AddListener(SendChatMessage);
@@ -32,8 +34,17 @@ public class UIManager : MonoBehaviour
         if (legacyInputField != null)
             legacyInputField.Select();
 
-        if (legacyResponseText != null)
+        // Restore chat history on startup
+        if (legacyResponseText != null && _persistence != null && _persistence.MessageCount > 0)
+        {
+            legacyResponseText.supportRichText = true;
+            legacyResponseText.text = _persistence.GetChatHistoryAsText();
+            ScrollToBottom();
+        }
+        else if (legacyResponseText != null)
+        {
             legacyResponseText.text = "";
+        }
     }
 
     void Update()
@@ -86,6 +97,9 @@ public class UIManager : MonoBehaviour
             legacyResponseText.text += "<color=#FFFFFF><b>You:</b> " + text + "</color>\n";
         }
         ScrollToBottom();
+
+        if (_persistence != null)
+            _persistence.AddMessage("user", text);
     }
 
     public void DisplayAIResponse(string text, string audioUrl)
@@ -96,6 +110,9 @@ public class UIManager : MonoBehaviour
             legacyResponseText.text += "<color=#7EC8E3><b>AI:</b> " + text + "</color>\n";
         }
         ScrollToBottom();
+
+        if (_persistence != null)
+            _persistence.AddMessage("ai", text);
 
         if (!string.IsNullOrEmpty(audioUrl) && _audioManager != null)
             _audioManager.PlayAudio(audioUrl);
