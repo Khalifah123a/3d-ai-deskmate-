@@ -41,28 +41,7 @@
 
 ## Next Features to Implement
 
-### Medium Priority
-5. **Voice Input**
-   - Add microphone button in UI
-   - Speech-to-text for Indonesian/English
-   - Auto-send when silence detected
-
-6. **Expression Presets**
-   - Create blend shape animations
-   - Add mood-based idle cycles
-   - Reaction to specific keywords
-
-7. **Scene Management**
-   - Day/night cycle
-   - Different background scenes
-   - Mood-based lighting
-
 ### Low Priority (Nice to Have)
-8. **Persistence**
-   - Save chat history
-   - Remember user preferences
-   - Learning from past conversations
-
 9. **Multi-language**
    - Full Indonesian support
    - Language detection
