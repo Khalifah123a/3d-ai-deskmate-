@@ -132,21 +132,10 @@ public class VRMLoader : MonoBehaviour
             {
                 Debug.LogWarning("[VRM] Camera.main is null!");
             }
-            
-            // Ensure lookAtWidth is reasonable
-            _lookAtHead.m_headYawPitch = _lookAtHead.m_headYawPitch;
         }
         else
         {
             Debug.LogWarning("[VRM] VRMLookAtHead not found on character!");
-        }
-
-        // Also enable any LookAt components on children
-        foreach (var la in root.GetComponentsInChildren<VRMLookAt>(true))
-        {
-            if (Camera.main != null)
-                la.Target = Camera.main.transform;
-            la.enabled = true;
         }
 
         // Find head transform for mouse tracking
