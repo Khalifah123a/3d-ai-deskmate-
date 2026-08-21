@@ -37,6 +37,13 @@
 - ✅ Enhanced AI Tools: open_application, open_url, open_folder, list_files, get_system_info
 - ✅ Analytics tracking: message count, tool usage, emotion stats
 
+### v2.1 - Bug Fixes & Polish
+- ✅ LookAtMouse: now properly connected to VRMLoader, follows mouse cursor
+- ✅ VRMIdleAnimator: skip head when LookAtMouse active (no conflict)
+- ✅ ExpressionPresets: direct init via VRMLoader, sync with SceneLighting
+- ✅ SpringBone: increased stiffness 0.5→1.0, added drag for stability
+- ✅ VRMLoader: auto-add LookAtMouse after physics enable
+
 ## How to Use Dashboard
 
 1. Start backend: `python server.py`
