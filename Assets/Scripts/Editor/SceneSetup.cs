@@ -42,6 +42,7 @@ public class SceneSetup
 
         new GameObject("WebSocket").AddComponent<WebSocketClient>();
         new GameObject("AudioManager").AddComponent<AudioManager>();
+        new GameObject("VoiceInput").AddComponent<VoiceInputManager>();
         GameObject vrmLoader = new GameObject("VRMLoader");
         vrmLoader.AddComponent<VRMLoader>();
         vrmLoader.AddComponent<PlaceholderAvatar>();
@@ -131,7 +132,15 @@ public class SceneSetup
 
         // Response area with larger font and better visibility
         GameObject respArea = CreatePanel(canvasObj.transform, "ResponseArea",
-            new Vector2(0.02f, 0.17f), new Vector2(0.98f, 0.98f), new Color(0, 0, 0, 0.75f));
+            new Vector2(0.02f, 0.22f), new Vector2(0.98f, 0.98f), new Color(0, 0, 0, 0.75f));
+
+        // Voice button
+        GameObject voiceBtnObj = CreatePanel(canvasObj.transform, "VoiceButton",
+            new Vector2(0.02f, 0.12f), new Vector2(0.12f, 0.2f), new Color(0.8f, 0.2f, 0.2f, 0.9f));
+        Button voiceBtn = voiceBtnObj.AddComponent<Button>();
+        Text voiceBtnLabel = CreateText(voiceBtnObj.transform, "Label", font,
+            "🎤", 28, Color.white, TextAnchor.MiddleCenter);
+        voiceBtn.onClick.AddListener(() => uiMgr.ToggleVoiceRecording());
 
         GameObject respTextObj = CreatePanel(respArea.transform, "ResponseText",
             Vector2.zero, Vector2.one, Color.clear);
@@ -157,7 +166,7 @@ public class SceneSetup
         btn.onClick.AddListener(() => uiMgr.SendChatMessage());
 
         EditorUtility.DisplayDialog("Setup Complete",
-            "1. Restart backend: python server.py\n2. Set VRMLoader Vrm Path\n3. Play",
+            "1. Restart backend: python server.py\n2. Set VRMLoader Vrm Path\n3. Play\n\nNew: Voice input button (🎤) added!",
             "OK");
     }
 

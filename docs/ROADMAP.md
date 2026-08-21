@@ -18,6 +18,12 @@
 - ✅ Chat history: user (white) vs AI (blue) with bold labels
 - ✅ Connection status indicator (✓ Connected / ✗ Disconnected)
 
+### v1.1 - Medium Priority Features
+- ✅ Expression Presets: mood-based idle cycles (Neutral, Happy, Excited, Thoughtful, Concerned, Sleepy)
+- ✅ Keyword reactions: avatar reacts to specific words (halo, terima kasih, tolong, dll)
+- ✅ Voice Input: microphone button (🎤) with recording, silence detection, auto-stop
+- ✅ Voice manager integrated with UIManager for recording state management
+
 ## How to Apply Fixes in Unity
 
 1. **Open Unity** and wait for recompilation

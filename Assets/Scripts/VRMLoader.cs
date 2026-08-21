@@ -206,6 +206,9 @@ public class VRMLoader : MonoBehaviour
         var lipSync = root.AddComponent<LipSyncManager>();
         lipSync.Init(expr, idle);
 
+        // Add expression presets for mood-based reactions
+        var presets = root.AddComponent<ExpressionPresets>();
+
         Debug.Log("[VRM] Setup complete");
     }
 

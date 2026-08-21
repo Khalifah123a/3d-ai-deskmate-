@@ -12,6 +12,8 @@ public class UIManager : MonoBehaviour
     private WebSocketClient _webSocket;
     private AudioManager _audioManager;
     private VRMIdleAnimator _idleAnimator;
+    private ExpressionPresets _expressionPresets;
+    private VoiceInputManager _voiceInput;
     private bool _isProcessing = false;
     private string _typingDots = "";
     private float _typingTimer;
@@ -21,6 +23,8 @@ public class UIManager : MonoBehaviour
         _webSocket = FindAnyObjectByType<WebSocketClient>();
         _audioManager = FindAnyObjectByType<AudioManager>();
         _idleAnimator = FindAnyObjectByType<VRMIdleAnimator>();
+        _expressionPresets = FindAnyObjectByType<ExpressionPresets>();
+        _voiceInput = FindAnyObjectByType<VoiceInputManager>();
 
         if (legacySendButton != null)
             legacySendButton.onClick.AddListener(SendChatMessage);
@@ -96,6 +100,17 @@ public class UIManager : MonoBehaviour
         if (!string.IsNullOrEmpty(audioUrl) && _audioManager != null)
             _audioManager.PlayAudio(audioUrl);
 
+        // React to AI response with expression presets
+        if (_expressionPresets != null)
+        {
+            // Extract emotion from response if available
+            string emotion = ExtractEmotionFromResponse(text);
+            if (!string.IsNullOrEmpty(emotion))
+                _expressionPresets.SetMoodFromEmotion(emotion);
+            else
+                _expressionPresets.ReactToKeyword(text);
+        }
+
         UpdateStatus("Ready");
         _isProcessing = false;
         _typingDots = "";
@@ -127,5 +142,40 @@ public class UIManager : MonoBehaviour
             Canvas.ForceUpdateCanvases();
             chatScroll.verticalNormalizedPosition = 0f;
         }
+    }
+    
+    private string ExtractEmotionFromResponse(string text)
+    {
+        // Try to extract emotion tag from response
+        if (string.IsNullOrEmpty(text)) return null;
+        
+        string[] emotions = { "happy", "sad", "angry", "surprised", "neutral" };
+        string lowerText = text.ToLower();
+        
+        foreach (string emotion in emotions)
+        {
+            if (lowerText.Contains("[" + emotion + "]") || lowerText.Contains(emotion))
+                return emotion;
+        }
+        
+        return null;
+    }
+    
+    public void ToggleVoiceRecording()
+    {
+        if (_voiceInput == null)
+        {
+            _voiceInput = FindAnyObjectByType<VoiceInputManager>();
+            if (_voiceInput == null)
+            {
+                Debug.Log("[UI] VoiceInputManager not found");
+                return;
+            }
+        }
+        
+        if (_voiceInput.IsRecording)
+            _voiceInput.StopRecording();
+        else
+            _voiceInput.StartRecording();
     }
 }
