@@ -30,6 +30,19 @@
 - ✅ User preferences storage via PlayerPrefs
 - ✅ Chat history restored on app startup
 
+### v2.0 - Web Dashboard & AI Tools
+- ✅ Web Dashboard: real-time server monitoring (CPU/RAM/disk), chat history, analytics
+- ✅ Mobile-responsive dark theme dashboard (accessible from phone via Tailscale)
+- ✅ Dashboard endpoints: /api/status, /api/chat/history, /api/analytics
+- ✅ Enhanced AI Tools: open_application, open_url, open_folder, list_files, get_system_info
+- ✅ Analytics tracking: message count, tool usage, emotion stats
+
+## How to Use Dashboard
+
+1. Start backend: `python server.py`
+2. Open browser: `http://localhost:8000/`
+3. Or access from phone via Tailscale: `http://<tailscale-ip>:8000/`
+
 ## How to Apply Fixes in Unity
 
 1. **Open Unity** and wait for recompilation
