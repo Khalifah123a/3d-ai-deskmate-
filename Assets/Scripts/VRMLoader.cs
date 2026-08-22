@@ -109,7 +109,6 @@ public class VRMLoader : MonoBehaviour
             s.enabled = true;
             s.m_gravityDir = new Vector3(0, -1, 0);
             s.m_stiffnessForce = 1.0f; // Increased for stability
-            s.m_drag = 0.7f; // Add drag to reduce jitter
         }
         Debug.Log("[VRM] Enabled " + springs.Length + " SpringBone components");
 
