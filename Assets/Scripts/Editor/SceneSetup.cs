@@ -76,6 +76,8 @@ public class SceneSetup
         QualitySettings.antiAliasing = 4;
         QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
         QualitySettings.vSyncCount = 0;
+
+        var existingEventSystem = UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
         if (existingEventSystem == null)
         {
             GameObject eventSystemObj = new GameObject("EventSystem");
