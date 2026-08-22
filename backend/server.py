@@ -84,33 +84,31 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def strip_think_blocks(text: str) -> str:
-    """Remove all thinking blocks from LLM responses - AGGRESSIVE CLEANING."""
-    # Remove <think>...</think>
-    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Remove <think>...</think>
+    """Remove all thinking blocks and structured output from LLM responses."""
+    cleaned = text
+    
+    # 1. Remove thinking block tags
     cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
-    # Remove [thinking]...[output]
+    cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
     cleaned = re.sub(r'\[thinking\].*?\[output\]', '', cleaned, flags=re.DOTALL)
-    # Remove [thinking]... to end
     cleaned = re.sub(r'\[thinking\].*', '', cleaned, flags=re.DOTALL)
-    # Remove stray tags
     cleaned = re.sub(r'</?think>', '', cleaned)
     cleaned = re.sub(r'\[thinking\]', '', cleaned)
     cleaned = re.sub(r'\[output\]', '', cleaned)
-    # Remove structured boxes: +---+, |---|, ====
-    cleaned = re.sub(r'\+[-=]+\+', '', cleaned)
-    cleaned = re.sub(r'\|[-=]+\|', '', cleaned)
-    cleaned = re.sub(r'=+-+=', '', cleaned)
-    # Remove pipe content
-    cleaned = re.sub(r'\|.*?\|', '', cleaned, flags=re.DOTALL)
-    # Remove lines starting with + or |
-    cleaned = re.sub(r'^[+|].*$', '', cleaned, flags=re.MULTILINE)
-    # Remove separator lines
-    cleaned = re.sub(r'[-=]{3,}', '', cleaned)
-    # Remove structured output lines
-    cleaned = re.sub(r'^(Recommendation|Reason|Confidence|Primary|Agent)[^\n]*$', '', cleaned, flags=re.MULTILINE)
-    # Clean whitespace
+    
+    # 2. Remove box border lines (only +, -, =, spaces)
+    cleaned = re.sub(r'^[\s+\-=]+\s*$', '', cleaned, flags=re.MULTILINE)
+    
+    # 3. Remove pipe content lines (| content |)
+    cleaned = re.sub(r'^\s*\|.*\|\s*$', '', cleaned, flags=re.MULTILINE)
+    
+    # 4. Remove structured output keywords
+    cleaned = re.sub(r'^(Recommendation|Reason|Confidence|Primary|Agent|Score)[^\n]*$', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'^\s*\d+\.?\d*\s*%', '', cleaned, flags=re.MULTILINE)
+    
+    # 5. Final cleanup
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    cleaned = re.sub(r'^\s*[+|]\s*$', '', cleaned, flags=re.MULTILINE)
     return cleaned.strip()
 
 

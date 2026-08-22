@@ -1214,7 +1214,7 @@ MonoBehaviour:
   vrmPath: Assets/Models/2119591849329468324.vrm
   spawnPosition: {x: 0, y: 0, z: 0}
   spawnRotation: {x: 0, y: 180, z: 0}
-  spawnScale: {x: 0.8, y: 0.8, z: 0.8}
+  spawnScale: {x: 1, y: 1, z: 1}
 --- !u!4 &1310008933
 Transform:
   m_ObjectHideFlags: 0
@@ -1267,7 +1267,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -35, y: 0}
+  m_AnchoredPosition: {x: -34.999878, y: 0}
   m_SizeDelta: {x: -90, y: -16}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1313674846
