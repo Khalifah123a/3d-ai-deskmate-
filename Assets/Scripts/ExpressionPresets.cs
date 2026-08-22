@@ -19,7 +19,10 @@ public class ExpressionPresets : MonoBehaviour
         Excited,
         Thoughtful,
         Concerned,
-        Sleepy
+        Sleepy,
+        Angry,
+        Confused,
+        Sad
     }
     
     private Mood _currentMood = Mood.Neutral;
@@ -43,7 +46,18 @@ public class ExpressionPresets : MonoBehaviour
         { "capek", Mood.Sleepy },
         { "pikir", Mood.Thoughtful },
         { "mengerti", Mood.Thoughtful },
-        { "cerita", Mood.Thoughtful }
+        { "cerita", Mood.Thoughtful },
+        { "marah", Mood.Angry },
+        { "kesal", Mood.Angry },
+        { "ganggu", Mood.Angry },
+        { "bingung", Mood.Confused },
+        { "rahasia", Mood.Confused },
+        { "menyedihkan", Mood.Sad },
+        { "sedih", Mood.Sad },
+        { "kecewa", Mood.Sad },
+        { "gembira", Mood.Happy },
+        { "senang", Mood.Happy },
+        { "lucu", Mood.Happy }
     };
     
     public void Initialize(ExpressionController expr)
@@ -107,6 +121,15 @@ public class ExpressionPresets : MonoBehaviour
                 break;
             case Mood.Sleepy:
                 _expressionController.SetExpression("neutral", 0.2f);
+                break;
+            case Mood.Angry:
+                _expressionController.SetExpression("angry", 0.7f);
+                break;
+            case Mood.Confused:
+                _expressionController.SetExpression("neutral", 0.5f);
+                break;
+            case Mood.Sad:
+                _expressionController.SetExpression("sad", 0.6f);
                 break;
             default:
                 _expressionController.SetExpression("neutral", 0.3f);
@@ -196,10 +219,11 @@ public class ExpressionPresets : MonoBehaviour
     {
         switch (emotion.ToLower())
         {
-            case "happy": case "joy": SetMood(Mood.Happy); break;
-            case "angry": case "marah": SetMood(Mood.Concerned); break;
-            case "sad": case "sedih": SetMood(Mood.Concerned); break;
-            case "surprised": case "fun": SetMood(Mood.Excited); break;
+            case "happy": case "joy": case "senang": case "gembira": SetMood(Mood.Happy); break;
+            case "angry": case "marah": case "kesal": SetMood(Mood.Angry); break;
+            case "sad": case "sedih": case "kecewa": SetMood(Mood.Sad); break;
+            case "surprised": case "fun": case "lucu": SetMood(Mood.Excited); break;
+            case "confused": case "bingung": SetMood(Mood.Confused); break;
             case "neutral": case "biasa": SetMood(Mood.Neutral); break;
             default: SetMood(Mood.Neutral); break;
         }

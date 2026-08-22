@@ -43,6 +43,8 @@ public class VRMIdleAnimator : MonoBehaviour
     private float _fidgetTimer;
     private bool _isFidgeting;
     private float _fidgetPhase;
+    private bool _isDoingSpecialAction;
+    private Coroutine _specialActionCoroutine;
 
     // Nodding for thinking
     private float _nodTimer;
@@ -52,6 +54,23 @@ public class VRMIdleAnimator : MonoBehaviour
     // Hand gesture when speaking
     private float _gestureTimer;
     private bool _isGesturing;
+
+    // Special mood states for body language
+    private bool _isBouncing;      // Happy/excited bounce
+    private bool _isSlouching;     // Sad/depressed slouch
+    private bool _isCrossedArms;   // Angry/confident pose
+    private bool _isHandOnChin;    // Thoughtful pose
+    private bool _isHeadOnHand;    // Bored pose
+
+    // Lower body (legs/feet)
+    private Transform _leftUpperLeg;
+    private Transform _rightUpperLeg;
+    private Transform _leftLowerLeg;
+    private Transform _rightLowerLeg;
+    private Quaternion _leftLegDefault;
+    private Quaternion _rightLegDefault;
+    private Quaternion _leftShinDefault;
+    private Quaternion _rightShinDefault;
 
     public void Init(GameObject root)
     {
@@ -69,6 +88,10 @@ public class VRMIdleAnimator : MonoBehaviour
             _rightUpperArm = _animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
             _leftLowerArm = _animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
             _rightLowerArm = _animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            _leftUpperLeg = _animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
+            _rightUpperLeg = _animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
+            _leftLowerLeg = _animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+            _rightLowerLeg = _animator.GetBoneTransform(HumanBodyBones.RightLowerLeg);
         }
         else
         {
@@ -79,6 +102,10 @@ public class VRMIdleAnimator : MonoBehaviour
             _rightUpperArm = FindByString(root, "J_Bip_R_UpperArm");
             _leftLowerArm = FindByString(root, "J_Bip_L_LowerArm");
             _rightLowerArm = FindByString(root, "J_Bip_R_LowerArm");
+            _leftUpperLeg = FindByString(root, "J_Bip_L_UpperLeg");
+            _rightUpperLeg = FindByString(root, "J_Bip_R_UpperLeg");
+            _leftLowerLeg = FindByString(root, "J_Bip_L_LowerLeg");
+            _rightLowerLeg = FindByString(root, "J_Bip_R_LowerLeg");
         }
 
         ApplyRestPose();
@@ -111,6 +138,10 @@ public class VRMIdleAnimator : MonoBehaviour
         if (_rightUpperArm) _rightArmDefault = _rightUpperArm.localRotation;
         if (_leftLowerArm) _leftForearmDefault = _leftLowerArm.localRotation;
         if (_rightLowerArm) _rightForearmDefault = _rightLowerArm.localRotation;
+        if (_leftUpperLeg) _leftLegDefault = _leftUpperLeg.localRotation;
+        if (_rightUpperLeg) _rightLegDefault = _rightUpperLeg.localRotation;
+        if (_leftLowerLeg) _leftShinDefault = _leftLowerLeg.localRotation;
+        if (_rightLowerLeg) _rightShinDefault = _rightLowerLeg.localRotation;
     }
 
     private Transform FindByString(GameObject root, string name)
@@ -143,28 +174,65 @@ public class VRMIdleAnimator : MonoBehaviour
     // Called by ExpressionPresets to sync mood
     public void SetMood(string mood)
     {
+        // Reset all special states first
+        _isBouncing = false;
+        _isSlouching = false;
+        _isCrossedArms = false;
+        _isHandOnChin = false;
+        _isHeadOnHand = false;
+
         switch (mood)
         {
-            case "happy": case "excited":
+            case "happy":
                 _isTilting = true;
+                _isBouncing = true;
                 _isFidgeting = false;
                 _tiltAmount = 0f;
                 _tiltTimer = 0f;
                 break;
-            case "sad": case "concerned":
+            case "excited":
+                _isTilting = true;
+                _isBouncing = true;
+                _isFidgeting = false;
+                _tiltAmount = 0f;
+                _tiltTimer = 0f;
+                break;
+            case "sad":
                 _isTilting = false;
                 _isFidgeting = false;
+                _isSlouching = true;
                 break;
-            case "sleepy": case "bored":
+            case "depressed":
+            case "concerned":
+                _isTilting = false;
+                _isFidgeting = false;
+                _isSlouching = true;
+                break;
+            case "angry":
+                _isTilting = false;
+                _isFidgeting = false;
+                _isCrossedArms = true;
+                break;
+            case "sleepy":
+            case "bored":
                 _isTilting = false;
                 _isFidgeting = true;
+                _isHeadOnHand = true;
                 _fidgetTimer = 0f;
                 break;
             case "thoughtful":
                 _isTilting = true;
                 _isFidgeting = false;
+                _isHandOnChin = true;
                 _tiltAmount = 0f;
                 _tiltTimer = 0f;
+                break;
+            case "confused":
+                _isTilting = true;
+                _isFidgeting = true;
+                _tiltAmount = 0f;
+                _tiltTimer = 0f;
+                _fidgetTimer = 0f;
                 break;
             default: // neutral
                 _isTilting = false;
@@ -235,6 +303,10 @@ public class VRMIdleAnimator : MonoBehaviour
             if (_isTilting)
                 swayX += Mathf.Sin(_time * 2f) * 1f;
 
+            // Sad: deeper slouch
+            if (_isSlouching)
+                swayX += Mathf.Sin(_time * 0.3f) * 4f;
+
             _spineBone.localRotation = Quaternion.Slerp(_spineBone.localRotation,
                 _spineDefault * Quaternion.Euler(swayX, 0, swayZ), Time.deltaTime * 3f);
         }
@@ -252,6 +324,33 @@ public class VRMIdleAnimator : MonoBehaviour
             armSwayRight += _fidgetPhase * 1.5f;
         }
 
+        // Bouncing arms for happy/excited
+        if (_isBouncing)
+        {
+            float bounce = Mathf.Abs(Mathf.Sin(_time * 3f)) * 5f;
+            armSwayLeft += bounce;
+            armSwayRight -= bounce;
+        }
+
+        // Crossed arms for angry
+        if (_isCrossedArms)
+        {
+            armSwayLeft += 15f; // Bring arms closer together
+            armSwayRight -= 15f;
+        }
+
+        // Head on hand for bored
+        if (_isHeadOnHand && _rightUpperArm != null)
+        {
+            armSwayRight = Mathf.Lerp(armSwayRight, -30f, Time.deltaTime * 2f);
+        }
+
+        // Hand on chin for thoughtful
+        if (_isHandOnChin && _rightLowerArm != null)
+        {
+            armSwayRight = Mathf.Lerp(armSwayRight, -25f, Time.deltaTime * 2f);
+        }
+
         if (_isGesturing && _rightUpperArm != null)
         {
             _gestureTimer += Time.deltaTime;
@@ -265,6 +364,19 @@ public class VRMIdleAnimator : MonoBehaviour
         if (_rightUpperArm != null)
             _rightUpperArm.localRotation = Quaternion.Slerp(_rightUpperArm.localRotation,
                 _rightArmDefault * Quaternion.Euler(0, 0, armSwayRight), Time.deltaTime * 3f);
+
+        // Lower body: subtle weight shift + foot tap when bored
+        if (_leftUpperLeg != null && _rightUpperLeg != null)
+        {
+            float legShift = Mathf.Sin(_time * 0.4f) * 2f;
+            if (_isFidgeting)
+                legShift += Mathf.Sin(_time * 4f) * 3f; // Foot tap
+
+            _leftUpperLeg.localRotation = Quaternion.Slerp(_leftUpperLeg.localRotation,
+                _leftLegDefault * Quaternion.Euler(0, 0, legShift), Time.deltaTime * 3f);
+            _rightUpperLeg.localRotation = Quaternion.Slerp(_rightUpperLeg.localRotation,
+                _rightLegDefault * Quaternion.Euler(0, 0, -legShift), Time.deltaTime * 3f);
+        }
 
         // Blinking
         _blinkTimer += Time.deltaTime;
