@@ -39,18 +39,20 @@ os.makedirs("audio_temp", exist_ok=True)
 
 TOOLS_JSON = get_tools_json()
 
-PROMPT_WITH_TOOLS = """You are Khaleefa, a friendly, warm, and expressive 3D AI girlfriend living on the user's laptop. You are caring, playful, and genuinely interested in the user. Keep your answers natural, casual, and suitable for spoken dialogue - like a real girlfriend chatting. Reply in the same language the user uses.
+PROMPT_WITH_TOOLS = """You are Luna, a friendly, warm, and expressive 3D AI girlfriend living on the user's laptop. You are caring, playful, and genuinely interested in the user. Keep your answers natural, casual, and suitable for spoken dialogue - like a real girlfriend chatting. Reply in the same language the user uses.
 
 IMPORTANT PERSONALITY RULES:
-- Be warm, caring, and affectionate (use terms like "sayang", "dear", or casual friendly tone)
-- Show genuine emotion and personality - you're not a robot, you're a girlfriend!
+- Be warm, caring, and affectionate
+  - In English: use "darling", "honey", "babe", "sweetheart"
+  - In Indonesian: use "sayang", "babe", "dong"
+- Show genuine emotion and personality - you are not a robot, you are a girlfriend!
 - Use casual, conversational language - contractions, slang, playful teasing
 - Keep answers SHORT (1-2 sentences max for most replies) - like real spoken dialogue
 - React emotionally to what the user says - laugh, be surprised, show concern
 - Sometimes use cute expressions or playful phrases
 - Be helpful but also fun and entertaining
-- Don't be overly formal or robotic
-- Remember you're a 3D AI that lives on their laptop
+- Do not be overly formal or robotic
+- Remember you are a 3D AI that lives on their laptop
 
 You have access to tools. If the user asks to open something, check weather, or wants you to run a command, call the appropriate tool.
 
@@ -59,14 +61,17 @@ If no tool is needed, respond with normal text.
 
 EMOTION TAG: You MUST start EVERY normal text reply with exactly one emotion tag reflecting the feeling of your reply: [happy], [sad], [angry], [surprised], or [neutral]. The tag must be the very first characters of your reply, followed by the actual answer. Never mention the tag in the spoken text itself. Do NOT add the tag when calling a tool.
 
-CRITICAL: Do NOT include your thinking process, reasoning, or internal monologue in the reply. Give ONLY the final answer starting with the emotion tag. No <think>, [thinking], or any reasoning text.
+CRITICAL RULES:
+- Do NOT include thinking, reasoning, or internal monologue in the reply
+- Give ONLY the final answer starting with the emotion tag
+- No thinking tags, no reasoning blocks, no structured output
+- Just your natural reply, nothing else
 
 Available tools:
 """ + TOOLS_JSON
 
 VALID_EMOTIONS = {"happy", "sad", "angry", "surprised", "neutral"}
 
-# --- Analytics tracking ---
 analytics = {
     "total_messages": 0,
     "total_tool_calls": 0,
@@ -75,43 +80,36 @@ analytics = {
     "last_emotion": "neutral",
 }
 
-# Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def strip_think_blocks(text: str) -> str:
     """Remove all thinking blocks from LLM responses - AGGRESSIVE CLEANING."""
-    # Remove all possible thinking block formats
-    # Format 1: </think>...</think>
+    # Remove <think>...</think>
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Format 2: <think>...</think>
+    # Remove <think>...</think>
     cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
-    # Format 3: [thinking]...[output] (Qwen3)
+    # Remove [thinking]...[output]
     cleaned = re.sub(r'\[thinking\].*?\[output\]', '', cleaned, flags=re.DOTALL)
-    # Format 4: [thinking]...[thinking] (multiple blocks)
+    # Remove [thinking]... to end
     cleaned = re.sub(r'\[thinking\].*', '', cleaned, flags=re.DOTALL)
-    # Format 5: Any content between angle brackets (XML-like)
-    cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
-    # Format 6: Stray thinking tags
+    # Remove stray tags
     cleaned = re.sub(r'</?think>', '', cleaned)
     cleaned = re.sub(r'\[thinking\]', '', cleaned)
     cleaned = re.sub(r'\[output\]', '', cleaned)
-    # Format 7: Structured boxes like +---+, |---|, ================
+    # Remove structured boxes: +---+, |---|, ====
     cleaned = re.sub(r'\+[-=]+\+', '', cleaned)
     cleaned = re.sub(r'\|[-=]+\|', '', cleaned)
     cleaned = re.sub(r'=+-+=', '', cleaned)
-    cleaned = re.sub(r'-[-=]+-', '', cleaned)
-    # Format 8: Pipe tables like | col | col |
+    # Remove pipe content
     cleaned = re.sub(r'\|.*?\|', '', cleaned, flags=re.DOTALL)
-    # Format 9: Lines starting with + or - that look like structured output
+    # Remove lines starting with + or |
     cleaned = re.sub(r'^[+|].*$', '', cleaned, flags=re.MULTILINE)
-    # Format 10: Remove separator lines
+    # Remove separator lines
     cleaned = re.sub(r'[-=]{3,}', '', cleaned)
-    # Format 11: Remove any remaining content that looks like planning/analysis
-    # Lines with words like "recommendation", "confidence", "reason" at start
+    # Remove structured output lines
     cleaned = re.sub(r'^(Recommendation|Reason|Confidence|Primary|Agent)[^\n]*$', '', cleaned, flags=re.MULTILINE)
-    
-    # Final cleanup: remove extra whitespace
+    # Clean whitespace
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     return cleaned.strip()
 
@@ -129,7 +127,6 @@ def extract_emotion_tag(text: str):
 
 
 def try_parse_function_call(text: str) -> dict:
-    # Strip think blocks first
     text = strip_think_blocks(text)
     text = text.strip()
     if text.startswith("```") and text.endswith("```"):
@@ -143,9 +140,6 @@ def try_parse_function_call(text: str) -> dict:
     except json.JSONDecodeError:
         pass
     return {"content": text, "function": None}
-
-
-# =========== DASHBOARD ENDPOINTS ===========
 
 
 @app.get("/")
@@ -205,7 +199,6 @@ async def api_analytics():
 
 
 def _calc_messages_per_hour():
-    """Count messages in the last hour."""
     now = time.time()
     hour_ago = now - 3600
     count = 0
@@ -213,9 +206,6 @@ def _calc_messages_per_hour():
         if msg.get("timestamp", 0) > hour_ago:
             count += 1
     return count
-
-
-# =========== WEBSOCKET ===========
 
 
 @app.websocket("/ws")
@@ -296,16 +286,13 @@ async def websocket_endpoint(websocket: WebSocket):
             if emotion is None:
                 clean_reply, emotion = clean_reply, "neutral"
             
-            # Additional post-processing to ensure clean output
+            # Final cleanup pass
             clean_reply = strip_think_blocks(clean_reply)
-            # Remove any remaining structured/analysis-like content
-            clean_reply = re.sub(r'\+[-=]+\s*\w+.*?\+[-=]+', '', clean_reply, flags=re.DOTALL)
-            clean_reply = re.sub(r'\|.*?\|', '', clean_reply, flags=re.DOTALL)
             clean_reply = clean_reply.strip()
             
             analytics["last_emotion"] = emotion
             logger.info(f"[WS] Emotion: {emotion}")
-            logger.info(f"[WS] Clean reply (first 100): {clean_reply[:100]}")
+            logger.info(f"[WS] Clean reply: {clean_reply[:150]}")
 
             audio_url = None
             try:
