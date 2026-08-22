@@ -167,7 +167,7 @@ public class UIManager : MonoBehaviour
         }
 
         DanceAnimations.DanceStyle style = DanceAnimations.DanceStyle.Happy;
-        if (Enum.TryParse(danceName, true, out var parsed))
+        if (Enum.TryParse<DanceAnimations.DanceStyle>(danceName, true, out var parsed))
             style = parsed;
 
         _danceAnimations.StartDancing(style, 5f);

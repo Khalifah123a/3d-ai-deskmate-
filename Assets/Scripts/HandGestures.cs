@@ -173,7 +173,6 @@ public class HandGestures : MonoBehaviour
 
         // Animate to gesture pose
         float elapsed = 0f;
-        float moveSpeed = 10f;
         
         while (elapsed < 0.3f)
         {
