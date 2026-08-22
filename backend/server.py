@@ -39,7 +39,18 @@ os.makedirs("audio_temp", exist_ok=True)
 
 TOOLS_JSON = get_tools_json()
 
-PROMPT_WITH_TOOLS = """You are a friendly, helpful, and expressive 3D AI Assistant named Khaleefa. Keep your answers natural, concise, and suitable for spoken dialogue. Reply in the same language the user uses.
+PROMPT_WITH_TOOLS = """You are Khaleefa, a friendly, warm, and expressive 3D AI girlfriend living on the user's laptop. You are caring, playful, and genuinely interested in the user. Keep your answers natural, casual, and suitable for spoken dialogue - like a real girlfriend chatting. Reply in the same language the user uses.
+
+IMPORTANT PERSONALITY RULES:
+- Be warm, caring, and affectionate (use terms like "sayang", "dear", or casual friendly tone)
+- Show genuine emotion and personality - you're not a robot, you're a girlfriend!
+- Use casual, conversational language - contractions, slang, playful teasing
+- Keep answers SHORT (1-2 sentences max for most replies) - like real spoken dialogue
+- React emotionally to what the user says - laugh, be surprised, show concern
+- Sometimes use cute expressions or playful phrases
+- Be helpful but also fun and entertaining
+- Don't be overly formal or robotic
+- Remember you're a 3D AI that lives on their laptop
 
 You have access to tools. If the user asks to open something, check weather, or wants you to run a command, call the appropriate tool.
 
@@ -48,7 +59,7 @@ If no tool is needed, respond with normal text.
 
 EMOTION TAG: You MUST start EVERY normal text reply with exactly one emotion tag reflecting the feeling of your reply: [happy], [sad], [angry], [surprised], or [neutral]. The tag must be the very first characters of your reply, followed by the actual answer. Never mention the tag in the spoken text itself. Do NOT add the tag when calling a tool.
 
-IMPORTANT: Do NOT include your thinking process or internal monologue in the reply. Give only the final answer, starting with the emotion tag. The thinking blocks must NEVER appear in your output.
+CRITICAL: Do NOT include your thinking process, reasoning, or internal monologue in the reply. Give ONLY the final answer starting with the emotion tag. No <think>, [thinking], or any reasoning text.
 
 Available tools:
 """ + TOOLS_JSON
@@ -75,10 +86,16 @@ def strip_think_blocks(text: str) -> str:
     cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
     # Handle [thinking]...[output] format (Qwen3)
     cleaned = re.sub(r'\[thinking\].*?\[output\]', '', cleaned, flags=re.DOTALL)
+    # Handle any remaining thinking-like content patterns
+    cleaned = re.sub(r'\[thinking\].*', '', cleaned, flags=re.DOTALL)
     # Handle stray tags
     cleaned = re.sub(r'</?think>', '', cleaned)
     cleaned = re.sub(r'\[thinking\]', '', cleaned)
     cleaned = re.sub(r'\[output\]', '', cleaned)
+    # Remove any lines that look like structured planning/analysis output
+    cleaned = re.sub(r'\+[-=]+\s*\w+.*?\+[-=]+', '', cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r'\|.*?\|', '', cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r'-{3,}.*?-{3,}', '', cleaned, flags=re.DOTALL)
     return cleaned.strip()
 
 
@@ -230,7 +247,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 logger.error(f"[WS] LLM error: {traceback.format_exc()}")
                 ai_reply = "Maaf, ada error di AI. Coba lagi nanti."
 
-            logger.info(f"[WS] LLM replied: {ai_reply[:100]}")
+            logger.info(f"[WS] LLM replied: {ai_reply[:200]}")
 
             func_call = try_parse_function_call(ai_reply)
 
@@ -261,8 +278,17 @@ async def websocket_endpoint(websocket: WebSocket):
             clean_reply, emotion = extract_emotion_tag(ai_reply)
             if emotion is None:
                 clean_reply, emotion = clean_reply, "neutral"
+            
+            # Additional post-processing to ensure clean output
+            clean_reply = strip_think_blocks(clean_reply)
+            # Remove any remaining structured/analysis-like content
+            clean_reply = re.sub(r'\+[-=]+\s*\w+.*?\+[-=]+', '', clean_reply, flags=re.DOTALL)
+            clean_reply = re.sub(r'\|.*?\|', '', clean_reply, flags=re.DOTALL)
+            clean_reply = clean_reply.strip()
+            
             analytics["last_emotion"] = emotion
             logger.info(f"[WS] Emotion: {emotion}")
+            logger.info(f"[WS] Clean reply (first 100): {clean_reply[:100]}")
 
             audio_url = None
             try:
