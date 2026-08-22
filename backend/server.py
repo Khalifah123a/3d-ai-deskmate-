@@ -70,11 +70,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 def strip_think_blocks(text: str) -> str:
     """Remove all thinking blocks from LLM responses."""
-    # Handle both <think> and <think> formats
+    # Handle <think>...</think> and <think>...</think> formats
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
     cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
-    # Also strip any stray opening/closing tags that might be malformed
+    # Handle [thinking]...[output] format (Qwen3)
+    cleaned = re.sub(r'\[thinking\].*?\[output\]', '', cleaned, flags=re.DOTALL)
+    # Handle stray tags
     cleaned = re.sub(r'</?think>', '', cleaned)
+    cleaned = re.sub(r'\[thinking\]', '', cleaned)
+    cleaned = re.sub(r'\[output\]', '', cleaned)
     return cleaned.strip()
 
 
