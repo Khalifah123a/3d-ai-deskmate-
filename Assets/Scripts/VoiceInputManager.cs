@@ -31,7 +31,7 @@ public class VoiceInputManager : MonoBehaviour
         if (_isRecording) return;
         
         // Check microphone permission
-        if (!Microphone.devices.Length.Equals(0))
+        if (Microphone.devices.Length == 0)
         {
             Debug.Log("[Voice] No microphone found");
             return;
