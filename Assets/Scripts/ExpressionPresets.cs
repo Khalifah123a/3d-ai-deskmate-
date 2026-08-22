@@ -8,6 +8,7 @@ public class ExpressionPresets : MonoBehaviour
     private ExpressionController _expressionController;
     private VRMBlendShapeProxy _proxy;
     private SceneLighting _sceneLighting;
+    private VRMIdleAnimator _idleAnimator;
     private Coroutine _idleCoroutine;
     
     // Mood states
@@ -50,6 +51,7 @@ public class ExpressionPresets : MonoBehaviour
         _expressionController = expr;
         _proxy = GetComponent<VRMBlendShapeProxy>();
         _sceneLighting = FindAnyObjectByType<SceneLighting>();
+        _idleAnimator = GetComponent<VRMIdleAnimator>();
     }
     
     void Awake()
@@ -61,6 +63,8 @@ public class ExpressionPresets : MonoBehaviour
             _proxy = GetComponent<VRMBlendShapeProxy>();
         if (_sceneLighting == null)
             _sceneLighting = FindAnyObjectByType<SceneLighting>();
+        if (_idleAnimator == null)
+            _idleAnimator = FindAnyObjectByType<VRMIdleAnimator>();
     }
     
     void Start()
@@ -112,7 +116,11 @@ public class ExpressionPresets : MonoBehaviour
         // Update scene lighting based on mood
         if (_sceneLighting != null)
             _sceneLighting.SetMoodFromEmotion(mood.ToString().ToLower());
-        
+
+        // Sync body language with idle animator
+        if (_idleAnimator != null)
+            _idleAnimator.SetMood(mood.ToString().ToLower());
+
         Debug.Log("[Expr] Mood changed to: " + mood);
     }
     

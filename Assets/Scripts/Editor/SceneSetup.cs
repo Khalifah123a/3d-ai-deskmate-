@@ -14,7 +14,7 @@ public class SceneSetup
         foreach (var go in toDestroy)
             Object.DestroyImmediate(go);
 
-        // Camera - closer and better positioned for portrait view
+        // Camera - better positioned with quality settings
         GameObject camObj = new GameObject("Main Camera");
         Camera cam = camObj.AddComponent<Camera>();
         camObj.tag = "MainCamera";
@@ -23,9 +23,11 @@ public class SceneSetup
         cam.transform.LookAt(new Vector3(0, 1.2f, 0));
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.08f, 0.08f, 0.12f);
-        cam.nearClipPlane = 0.1f;
+        cam.nearClipPlane = 0.01f;
+        cam.farClipPlane = 100f;
+        cam.fieldOfView = 35f;
         cam.orthographic = false;
-        cam.orthographicSize = 5f;
+        cam.allowMSAA = true;
 
         GameObject lightObj = new GameObject("Directional Light");
         Light light = lightObj.AddComponent<Light>();
@@ -70,7 +72,10 @@ public class SceneSetup
         canvasRect.offsetMax = Vector2.zero;
         canvasRect.localScale = Vector3.one;
 
-        var existingEventSystem = UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+        // Set quality settings for better visuals
+        QualitySettings.antiAliasing = 4;
+        QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+        QualitySettings.vSyncCount = 0;
         if (existingEventSystem == null)
         {
             GameObject eventSystemObj = new GameObject("EventSystem");

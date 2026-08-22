@@ -31,7 +31,18 @@ public class VRMIdleAnimator : MonoBehaviour
     private bool _isSpeaking;
     private bool _isThinking;
     private bool _initialized;
-    private LookAtMouse _lookAtMouse; // Skip head when mouse tracking
+    private LookAtMouse _lookAtMouse;
+    private ExpressionPresets _expressionPresets; // Mood tracking
+
+    // Head tilt for happy mood
+    private float _tiltTimer;
+    private float _tiltAmount;
+    private bool _isTilting;
+
+    // Bored/fidgety movements
+    private float _fidgetTimer;
+    private bool _isFidgeting;
+    private float _fidgetPhase;
 
     // Nodding for thinking
     private float _nodTimer;
@@ -47,6 +58,7 @@ public class VRMIdleAnimator : MonoBehaviour
         _proxy = root.GetComponent<VRMBlendShapeProxy>();
         _animator = root.GetComponent<Animator>();
         _lookAtMouse = root.GetComponent<LookAtMouse>();
+        _expressionPresets = root.GetComponent<ExpressionPresets>();
 
         if (_animator != null && _animator.isHuman)
         {
@@ -120,8 +132,44 @@ public class VRMIdleAnimator : MonoBehaviour
         _isThinking = thinking;
         if (thinking)
         {
+            _tiltTimer = 0f;
+            _isTilting = false;
+            _isFidgeting = false;
             _nodTimer = 0f;
             _nextNodTime = Random.Range(0.5f, 1.5f);
+        }
+    }
+
+    // Called by ExpressionPresets to sync mood
+    public void SetMood(string mood)
+    {
+        switch (mood)
+        {
+            case "happy": case "excited":
+                _isTilting = true;
+                _isFidgeting = false;
+                _tiltAmount = 0f;
+                _tiltTimer = 0f;
+                break;
+            case "sad": case "concerned":
+                _isTilting = false;
+                _isFidgeting = false;
+                break;
+            case "sleepy": case "bored":
+                _isTilting = false;
+                _isFidgeting = true;
+                _fidgetTimer = 0f;
+                break;
+            case "thoughtful":
+                _isTilting = true;
+                _isFidgeting = false;
+                _tiltAmount = 0f;
+                _tiltTimer = 0f;
+                break;
+            default: // neutral
+                _isTilting = false;
+                _isFidgeting = false;
+                break;
         }
     }
 
@@ -133,11 +181,22 @@ public class VRMIdleAnimator : MonoBehaviour
         // Head: only move if LookAtMouse is NOT active (avoids conflict)
         if (_headBone != null && _lookAtMouse == null)
         {
-            float headPitch = Mathf.Sin(_time * 0.8f) * 3f;
-            float headYaw = Mathf.Cos(_time * 0.5f) * 4f;
-            
-            _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
-                _headDefault * Quaternion.Euler(headPitch, headYaw, 0f), Time.deltaTime * 3f);
+            float basePitch = Mathf.Sin(_time * 0.8f) * 3f;
+            float baseYaw = Mathf.Cos(_time * 0.5f) * 4f;
+
+            // Happy: gentle head tilt
+            if (_isTilting)
+            {
+                _tiltTimer += Time.deltaTime;
+                _tiltAmount = Mathf.Sin(_tiltTimer * 1.5f) * 8f;
+                _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
+                    _headDefault * Quaternion.Euler(basePitch, baseYaw, _tiltAmount), Time.deltaTime * 3f);
+            }
+            else
+            {
+                _headBone.localRotation = Quaternion.Slerp(_headBone.localRotation,
+                    _headDefault * Quaternion.Euler(basePitch, baseYaw, 0f), Time.deltaTime * 3f);
+            }
         }
 
         // Nodding when thinking (works even with LookAtMouse)
@@ -162,11 +221,20 @@ public class VRMIdleAnimator : MonoBehaviour
                 _chestDefault * Quaternion.Euler(breath, weightShift, 0), Time.deltaTime * 3f);
         }
 
-        // Spine: body sway
+        // Spine: body sway + mood variations
         if (_spineBone != null)
         {
             float swayX = Mathf.Sin(_time * 0.7f) * 2f;
             float swayZ = Mathf.Cos(_time * 0.4f) * 1.5f;
+
+            // Bored: slight slouch
+            if (_isFidgeting)
+                swayX += Mathf.Sin(_time * 0.5f) * 3f;
+
+            // Happy: slight upright bounce
+            if (_isTilting)
+                swayX += Mathf.Sin(_time * 2f) * 1f;
+
             _spineBone.localRotation = Quaternion.Slerp(_spineBone.localRotation,
                 _spineDefault * Quaternion.Euler(swayX, 0, swayZ), Time.deltaTime * 3f);
         }
@@ -174,6 +242,15 @@ public class VRMIdleAnimator : MonoBehaviour
         // Arms: continuous sway + gestures when speaking
         float armSwayLeft = Mathf.Sin(_time * 0.8f) * 3f;
         float armSwayRight = Mathf.Sin(_time * 0.8f + Mathf.PI) * 3f;
+
+        // Fidget when bored/sleepy
+        if (_isFidgeting)
+        {
+            _fidgetTimer += Time.deltaTime;
+            _fidgetPhase = Mathf.Sin(_fidgetTimer * 2f);
+            armSwayLeft += _fidgetPhase * 2f;
+            armSwayRight += _fidgetPhase * 1.5f;
+        }
 
         if (_isGesturing && _rightUpperArm != null)
         {

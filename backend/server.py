@@ -5,6 +5,7 @@ import asyncio
 import os
 import json
 import logging
+import re
 import time
 import traceback
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -47,6 +48,8 @@ If no tool is needed, respond with normal text.
 
 EMOTION TAG: You MUST start EVERY normal text reply with exactly one emotion tag reflecting the feeling of your reply: [happy], [sad], [angry], [surprised], or [neutral]. The tag must be the very first characters of your reply, followed by the actual answer. Never mention the tag in the spoken text itself. Do NOT add the tag when calling a tool.
 
+IMPORTANT: Do NOT include your thinking process or internal monologue in the reply. Give only the final answer, starting with the emotion tag. The thinking blocks must NEVER appear in your output.
+
 Available tools:
 """ + TOOLS_JSON
 
@@ -66,9 +69,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def strip_think_blocks(text: str) -> str:
-    """Remove <think>...</think> blocks from LLM responses."""
-    import re
+    """Remove all thinking blocks from LLM responses."""
+    # Handle both <think> and <think> formats
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
+    # Also strip any stray opening/closing tags that might be malformed
+    cleaned = re.sub(r'</?think>', '', cleaned)
     return cleaned.strip()
 
 
@@ -85,6 +91,8 @@ def extract_emotion_tag(text: str):
 
 
 def try_parse_function_call(text: str) -> dict:
+    # Strip think blocks first
+    text = strip_think_blocks(text)
     text = text.strip()
     if text.startswith("```") and text.endswith("```"):
         text = text[3:-3].strip()
@@ -248,7 +256,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             clean_reply, emotion = extract_emotion_tag(ai_reply)
             if emotion is None:
-                clean_reply, emotion = ai_reply, "neutral"
+                clean_reply, emotion = clean_reply, "neutral"
             analytics["last_emotion"] = emotion
             logger.info(f"[WS] Emotion: {emotion}")
 
