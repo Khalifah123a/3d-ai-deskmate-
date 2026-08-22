@@ -80,22 +80,39 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def strip_think_blocks(text: str) -> str:
-    """Remove all thinking blocks from LLM responses."""
-    # Handle <think>...</think> and <think>...</think> formats
+    """Remove all thinking blocks from LLM responses - AGGRESSIVE CLEANING."""
+    # Remove all possible thinking block formats
+    # Format 1: </think>...</think>
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Format 2: <think>...</think>
     cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
-    # Handle [thinking]...[output] format (Qwen3)
+    # Format 3: [thinking]...[output] (Qwen3)
     cleaned = re.sub(r'\[thinking\].*?\[output\]', '', cleaned, flags=re.DOTALL)
-    # Handle any remaining thinking-like content patterns
+    # Format 4: [thinking]...[thinking] (multiple blocks)
     cleaned = re.sub(r'\[thinking\].*', '', cleaned, flags=re.DOTALL)
-    # Handle stray tags
+    # Format 5: Any content between angle brackets (XML-like)
+    cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL)
+    # Format 6: Stray thinking tags
     cleaned = re.sub(r'</?think>', '', cleaned)
     cleaned = re.sub(r'\[thinking\]', '', cleaned)
     cleaned = re.sub(r'\[output\]', '', cleaned)
-    # Remove any lines that look like structured planning/analysis output
-    cleaned = re.sub(r'\+[-=]+\s*\w+.*?\+[-=]+', '', cleaned, flags=re.DOTALL)
+    # Format 7: Structured boxes like +---+, |---|, ================
+    cleaned = re.sub(r'\+[-=]+\+', '', cleaned)
+    cleaned = re.sub(r'\|[-=]+\|', '', cleaned)
+    cleaned = re.sub(r'=+-+=', '', cleaned)
+    cleaned = re.sub(r'-[-=]+-', '', cleaned)
+    # Format 8: Pipe tables like | col | col |
     cleaned = re.sub(r'\|.*?\|', '', cleaned, flags=re.DOTALL)
-    cleaned = re.sub(r'-{3,}.*?-{3,}', '', cleaned, flags=re.DOTALL)
+    # Format 9: Lines starting with + or - that look like structured output
+    cleaned = re.sub(r'^[+|].*$', '', cleaned, flags=re.MULTILINE)
+    # Format 10: Remove separator lines
+    cleaned = re.sub(r'[-=]{3,}', '', cleaned)
+    # Format 11: Remove any remaining content that looks like planning/analysis
+    # Lines with words like "recommendation", "confidence", "reason" at start
+    cleaned = re.sub(r'^(Recommendation|Reason|Confidence|Primary|Agent)[^\n]*$', '', cleaned, flags=re.MULTILINE)
+    
+    # Final cleanup: remove extra whitespace
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     return cleaned.strip()
 
 
