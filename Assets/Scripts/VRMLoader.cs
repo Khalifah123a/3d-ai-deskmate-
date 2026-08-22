@@ -203,6 +203,14 @@ public class VRMLoader : MonoBehaviour
         var presets = root.AddComponent<ExpressionPresets>();
         presets.Initialize(expr);
 
+        // Add hand gestures
+        var gestures = root.AddComponent<HandGestures>();
+        gestures.Init();
+
+        // Add dance animations
+        var dance = root.AddComponent<DanceAnimations>();
+        dance.Init(root);
+
         Debug.Log("[VRM] Setup complete");
     }
 

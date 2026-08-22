@@ -36,7 +36,7 @@ public class VRMAnimationBridge : MonoBehaviour
         if (preset == BlendShapePreset.Unknown) return;
 
         var key = BlendShapeKey.CreateFromPreset(preset);
-        _blendShapeProxy.ImmediatelySetValue(key, Mathf.Clamp01(weight * 0.5f)); // Reduced lip sync intensity
+        _blendShapeProxy.ImmediatelySetValue(key, Mathf.Clamp01(weight * 0.5f));
     }
 
     public void ResetExpressions(float fadeTime = 0.3f)
@@ -102,15 +102,15 @@ public class VRMAnimationBridge : MonoBehaviour
     {
         switch (emotion.ToLower().Trim())
         {
-            case "happy": case "joy": case "senang":
+            case "happy": case "joy": case "senang": case "gembira":
                 return BlendShapeKey.CreateFromPreset(BlendShapePreset.Joy);
-            case "angry": case "marah":
+            case "angry": case "marah": case "kesal":
                 return BlendShapeKey.CreateFromPreset(BlendShapePreset.Angry);
-            case "sad": case "sorrow": case "sedih":
+            case "sad": case "sorrow": case "sedih": case "menyedihkan":
                 return BlendShapeKey.CreateFromPreset(BlendShapePreset.Sorrow);
-            case "surprised": case "fun": case "kaget":
+            case "surprised": case "fun": case "kaget": case "lucu":
                 return BlendShapeKey.CreateFromPreset(BlendShapePreset.Fun);
-            case "neutral": case "biasa":
+            case "neutral": case "biasa": case "biasa saja":
                 return BlendShapeKey.CreateFromPreset(BlendShapePreset.Neutral);
             default:
                 return BlendShapeKey.CreateUnknown(emotion);

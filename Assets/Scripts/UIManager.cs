@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class UIManager : MonoBehaviour
 {
@@ -15,6 +16,8 @@ public class UIManager : MonoBehaviour
     private ExpressionPresets _expressionPresets;
     private VoiceInputManager _voiceInput;
     private ChatPersistence _persistence;
+    private HandGestures _handGestures;
+    private DanceAnimations _danceAnimations;
     private bool _isProcessing = false;
     private string _typingDots = "";
     private float _typingTimer;
@@ -27,6 +30,8 @@ public class UIManager : MonoBehaviour
         _expressionPresets = FindAnyObjectByType<ExpressionPresets>();
         _voiceInput = FindAnyObjectByType<VoiceInputManager>();
         _persistence = FindAnyObjectByType<ChatPersistence>();
+        _handGestures = FindAnyObjectByType<HandGestures>();
+        _danceAnimations = FindAnyObjectByType<DanceAnimations>();
 
         if (legacySendButton != null)
             legacySendButton.onClick.AddListener(SendChatMessage);
@@ -76,6 +81,14 @@ public class UIManager : MonoBehaviour
         string message = legacyInputField.text.Trim();
         if (string.IsNullOrEmpty(message) || _isProcessing) return;
 
+        // Handle slash commands
+        if (message.StartsWith("/"))
+        {
+            HandleSlashCommand(message.Substring(1).Trim());
+            legacyInputField.text = "";
+            return;
+        }
+
         DisplayUserMessage(message);
         _webSocket.SendToServer(message);
         legacyInputField.text = "";
@@ -87,6 +100,123 @@ public class UIManager : MonoBehaviour
         // Signal thinking to avatar
         if (_idleAnimator != null)
             _idleAnimator.SetThinking(true);
+    }
+
+    private void HandleSlashCommand(string command)
+    {
+        string[] parts = command.Split(' ');
+        string cmd = parts[0].ToLower();
+        string arg = parts.Length > 1 ? string.Join(" ", parts[1..]) : "";
+
+        switch (cmd)
+        {
+            case "help":
+                DisplaySlashHelp();
+                break;
+            case "gesture":
+            case "g":
+                HandleGesture(arg);
+                break;
+            case "dance":
+            case "d":
+                HandleDance(arg);
+                break;
+            case "expression":
+            case "e":
+                HandleExpression(arg);
+                break;
+            case "reset":
+                ResetAll();
+                break;
+            default:
+                DisplayUserMessage("/" + command + " — Perintah tidak dikenali. Ketik /help untuk daftar.");
+                break;
+        }
+    }
+
+    private void HandleGesture(string gestureName)
+    {
+        if (_handGestures == null)
+        {
+            DisplayUserMessage("[Gesture] HandGestures not found");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(gestureName))
+        {
+            DisplayUserMessage("[Gesture] Gunakan: /gesture [thumbsup | ok | point | wave | prayer | raised | clap | heart]");
+            return;
+        }
+
+        _handGestures.TriggerGestureByName(gestureName);
+        DisplayUserMessage("[Gesture] " + gestureName + " — done!");
+    }
+
+    private void HandleDance(string danceName)
+    {
+        if (_danceAnimations == null)
+        {
+            DisplayUserMessage("[Dance] DanceAnimations not found");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(danceName))
+        {
+            DisplayUserMessage("[Dance] Gunakan: /dance [bounce | happy | excited | groove | victory]");
+            return;
+        }
+
+        DanceAnimations.DanceStyle style = DanceAnimations.DanceStyle.Happy;
+        if (Enum.TryParse(danceName, true, out var parsed))
+            style = parsed;
+
+        _danceAnimations.StartDancing(style, 5f);
+        DisplayUserMessage("[Dance] " + danceName + " — mulai!");
+    }
+
+    private void HandleExpression(string exprName)
+    {
+        if (_expressionPresets == null)
+        {
+            DisplayUserMessage("[Expr] ExpressionPresets not found");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(exprName))
+        {
+            DisplayUserMessage("[Expr] Gunakan: /expression [happy | sad | angry | surprised | neutral | confused | excited]");
+            return;
+        }
+
+        _expressionPresets.SetMoodFromEmotion(exprName);
+        DisplayUserMessage("[Expr] " + exprName + " — done!");
+    }
+
+    private void ResetAll()
+    {
+        if (_handGestures != null)
+            _handGestures.TriggerGesture(HandGestures.GestureType.None);
+        if (_danceAnimations != null)
+            _danceAnimations.StopDancing();
+        if (_idleAnimator != null)
+            _idleAnimator.SetMood("neutral");
+        if (_expressionPresets != null)
+            _expressionPresets.SetMood(ExpressionPresets.Mood.Neutral);
+
+        DisplayUserMessage("[System] Semua animasi di-reset ke neutral");
+    }
+
+    private void DisplaySlashHelp()
+    {
+        string help = "<color=#FFD700><b>/help</b></color> — Tampilkan bantuan\n" +
+                      "<color=#FFD700><b>/gesture [name]</b></color> — Gesture tangan\n" +
+                      "  • thumbsup, ok, point, wave, prayer, raised, clap, heart\n" +
+                      "<color=#FFD700><b>/dance [style]</b></color> — Tarian\n" +
+                      "  • bounce, happy, excited, groove, victory\n" +
+                      "<color=#FFD700><b>/expression [mood]</b></color> — Ekspresi wajah\n" +
+                      "  • happy, sad, angry, surprised, neutral, confused, excited\n" +
+                      "<color=#FFD700><b>/reset</b></color> — Reset semua animasi";
+        DisplayUserMessage(help);
     }
 
     public void DisplayUserMessage(string text)
@@ -120,7 +250,6 @@ public class UIManager : MonoBehaviour
         // React to AI response with expression presets
         if (_expressionPresets != null)
         {
-            // Extract emotion from response if available
             string emotion = ExtractEmotionFromResponse(text);
             if (!string.IsNullOrEmpty(emotion))
                 _expressionPresets.SetMoodFromEmotion(emotion);
@@ -163,7 +292,6 @@ public class UIManager : MonoBehaviour
     
     private string ExtractEmotionFromResponse(string text)
     {
-        // Try to extract emotion tag from response
         if (string.IsNullOrEmpty(text)) return null;
         
         string[] emotions = { "happy", "sad", "angry", "surprised", "neutral" };
